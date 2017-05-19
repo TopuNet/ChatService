@@ -53,11 +53,15 @@
                 var Base_meta = {
                     "err": "<%=err%>",
                     "kind": "<%=kind%>",
-                    "customer_id": "<%=customer_id%>",
-                    "servicer_id": "<%=servicer_id%>",
-                    "customer_name": "<%=customer_name%>",
-                    "servicer_name": "<%=servicer_name%>"
+                    "cid": "<%=cid%>",
+                    "sid": "<%=sid%>",
+                    "cname": "<%=cname%>",
+                    "sname": "<%=sname%>",
+                    "records": []
                 };
+                <% records.forEach(function(r,index){ %>
+                    Base_meta.records.push(<%=r%>);
+                <% }); %>
                 </script>
                 <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat"></script>
 </body>

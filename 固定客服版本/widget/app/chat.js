@@ -36,12 +36,12 @@ define(["lib/socket.io.min"], function($io) {
             var that = this;
 
             // 客服进入已有其他客服接入的对话时
-            if (Base_meta.err == "hadServicer") {
-                that.show_error_dialog("此对话已有其他客服接入", function() {
-                    location.href = "list";
+            if (Base_meta.err == "noServicers") {
+                that.show_error_dialog("此商户暂时没有顾问可提供服务", function() {
+                    history.back();
                 });
-            } else if (Base_meta.err == "Quited") {
-                that.show_error_dialog("此对话已结束", function() {
+            } else if (Base_meta.err == "sidError") {
+                that.show_error_dialog("此会话已结束", function() {
                     location.href = "list";
                 });
             } else {
@@ -249,7 +249,7 @@ define(["lib/socket.io.min"], function($io) {
 
             var year = date.getFullYear();
             var month = date.getMonth() + 1;
-            var day = date.getDay();
+            var day = date.getDate();
             var hour = date.getHours();
             var minute = date.getMinutes();
             var second = date.getSeconds();
