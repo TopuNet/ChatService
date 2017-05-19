@@ -1,0 +1,229 @@
+/*
+	Chat 配套js文件
+	高京
+	2017-05-09
+
+	this= {
+		socket,
+		loadingToast,
+		iosDialog2,
+		nickname
+	}
+*/
+
+define(["lib/socket.io.min"], function($io) {
+    var chat = {
+        user_count: 0,
+        init: function() {
+            var that = this;
+
+            that.loadingToast = $(".loadingToast");
+            that.iosDialog2 = $("#iosDialog2");
+
+            // 监听prebutton的点击
+            that.prebutton_click_Listener.apply(that);
+        },
+
+        // 监听prebutton的点击
+        prebutton_click_Listener: function() {
+            var that = this;
+
+            $("input.button_start").unbind().on("mousedown touchstart", function(e) {
+                e.preventDefault();
+
+                that.socket_connect.apply(that);
+            });
+
+            $("input.button_clear_cookie").unbind().on("mousedown touchstart", function(e) {
+                e.preventDefault();
+                var exp = new Date();
+                exp.setTime(exp.getTime() - 1);
+                document.cookie = "Chat_gj_nickname=\"\";expires=" + exp.toGMTString();
+                $(this).val("cookie清除成功").unbind();
+            });
+        },
+
+        // 连接socket
+        socket_connect: function() {
+            var that = this;
+
+            that.loadingToast.find(".weui-toast__content").text("连接中...");
+            that.loadingToast.css("display", "block");
+
+            that.socket = $io.connect("http://117.79.92.82:4545");
+
+            // 监听socket连接成功
+            that.socket_connect_success.apply(that);
+
+            // 监听输入名称失败
+            that.prompt_name_error.apply(that);
+
+            // 监听输入名称成功
+            that.prompt_name_success.apply(that);
+
+            // 监听消息推送
+            that.broadcast.apply(that);
+
+            // 监听修改浏览器title的推送
+            that.set_title_Listener.apply(that);
+
+            // 监听按钮点击
+            that.button_click_Listener.apply(that);
+        },
+
+        // 监听socket连接成功
+        socket_connect_success: function() {
+            var that = this;
+            that.socket.on("connected", function() {
+                that.loadingToast.css("display", "none");
+                $("div.form").css("display", "block");
+                $("div.preform").css("display", "none");
+                that.name_loadfrom_cookie.apply(that);
+            });
+        },
+
+        // 从cookie中读取昵称
+        name_loadfrom_cookie: function() {
+            var that = this;
+            var reg = new RegExp(/Chat_gj_nickname=(?:(.+); .+|(.+)$)/gi);
+            var nickname = reg.exec(document.cookie);
+            if (nickname === null)
+                that.prompt_name.apply(that);
+            else {
+                that.nickname = nickname[1] || nickname[2];
+                that.nickname = unescape(that.nickname);
+                // console.log(that.nickname);
+                that.socket.emit("prompt_name", that.nickname);
+                that.loadingToast.css("display", "block");
+            }
+
+
+        },
+
+        // 输入名称
+        prompt_name: function() {
+            var that = this;
+            that.nickname = prompt("请键入您的姓名");
+
+            if (!that.nickname)
+                that.show_error_dialog.apply(that, ["请键入您的姓名"]);
+            else {
+                that.socket.emit("prompt_name", that.nickname);
+                that.loadingToast.css("display", "block");
+            }
+        },
+        // 监听输入名称失败
+        prompt_name_error: function() {
+            var that = this;
+
+            that.socket.on("prompt_name_error", function(msg) {
+                that.show_error_dialog.apply(that, [msg]);
+            });
+        },
+        // 显示错误信息弹层
+        show_error_dialog: function(msg) {
+            var that = this;
+
+            that.iosDialog2.find(".weui-dialog__bd").text(msg);
+            that.iosDialog2.find(".weui-dialog__btn_primary").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+                that.iosDialog2.css("display", "none");
+                that.prompt_name.apply(that);
+            });
+            that.iosDialog2.css("display", "block");
+        },
+        // 监听输入名称成功
+        prompt_name_success: function() {
+            var that = this;
+
+            that.socket.on("prompt_name_success", function(_user_count) {
+                that.user_count = _user_count;
+                that.set_title.apply(that, ["Chat_gj（" + (that.user_count) + "人）"]);
+                that.send_message.apply(that, [1, "欢迎您加入群聊"]);
+
+                that.loadingToast.css("display", "none");
+                $("div.form").css("display", "block");
+                $("div.preform").css("display", "none");
+
+                that.name_savein_cookie.apply(that);
+            });
+        },
+        // 名称存入cookie
+        name_savein_cookie: function() {
+            var that = this;
+
+            var exp = new Date();
+            exp.setTime(exp.getTime() + 24 * 60 * 60 * 1000);
+            document.cookie = "Chat_gj_nickname=" + escape(that.nickname) + ";expires=" + exp.toGMTString();
+        },
+        // 监听消息推送
+        broadcast: function() {
+            var that = this;
+
+            // kind: 1-系统消息 2-我的消息 3-其他人消息
+            // sender: 发送人（kind=3有效）
+            that.socket.on("broadcast", function(kind, msg, sender) {
+                that.send_message.apply(that, [kind, msg, sender]);
+            });
+        },
+        // 监听修改浏览器title的推送
+        set_title_Listener: function() {
+            var that = this;
+
+            that.socket.on("set_title", function(t) {
+                that.set_title.apply(that, [t]);
+            });
+        },
+        // 设置页面标题
+        // t: 标题内容
+        set_title: function(t) {
+            document.title = t;
+        },
+        // 推送消息
+        // kind: 1-系统消息 2-我的消息 3-其他人消息
+        // sender: 发送人（kind=3有效）
+        send_message: function(kind, msg, sender) {
+            var _sender = "";
+            switch (kind) {
+                case 1:
+                    _sender = "系统消息";
+                    break;
+                case 2:
+                    _sender = "我";
+                    break;
+                case 3:
+                    _sender = sender;
+            }
+            var li = $("li.demo").clone();
+            var date = new Date();
+
+            li.css("display", "block")
+                .text(date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + _sender + "：" + msg)
+                .removeClass("demo")
+                .prependTo($("ul"));
+        },
+
+        // 监听按钮点击
+        button_click_Listener: function() {
+            var that = this;
+            $("input.button").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+                var text = $("input.ttt").val();
+                if (text === "") {
+                    that.show_error_dialog("请键入内容");
+                } else {
+                    that.socket.emit("send_message", text);
+                    that.send_message.apply(that, [2, text]);
+                    $("input.ttt").val("");
+                }
+            });
+
+            $("input.button_modify_nickname").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+                that.prompt_name.apply(that);
+            });
+        }
+    };
+
+    return chat;
+});

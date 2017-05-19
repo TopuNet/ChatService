@@ -1,0 +1,204 @@
+@import "common.less";
+// 对话窗口页
+body.Chat {
+    background: #ebebeb;
+    // 消息记录
+    ul.list {
+        overflow: hidden;
+        text-align: center;
+        // 行
+        li {
+            margin-top: 2vh;
+            clear: both;
+            // 模板
+            &.template {
+                display: none!important;
+            }
+            // 系统消息行————居中
+            &.center {
+                display: block;
+                overflow: hidden;
+                text-align: center;
+                margin-top: 4vh;
+                div.wrapper {
+                    display: inline-block;
+                    padding: 1vw 3vw;
+                    background: #cecece;
+                    .border-radius(1.5vw);
+                    p {
+                        color: #fff;
+                        text-align: center;
+                        font-size: 2vw!important;
+                    }
+                }
+                // 系统消息后的首个消息行增高行距
+                &+li.message {
+                    margin-top: 4vh;
+                }
+                // 系统消息后的系统消息行减少行距
+                &+li.center {
+                    margin-top: 1vh;
+                }
+            }
+            // 消息行————居左右
+            &.message {
+                overflow: hidden;
+                // 头像
+                img.head {
+                    width: 6vh;
+                    height: 6vh;
+                }
+                div.message_content {
+                    text-align: left;
+                    // 姓名
+                    span.name {
+                        color: #848484;
+                        text-align: left;
+                        margin-left: 1vw;
+                    }
+                    // 文字内容
+                    p {
+                        position: relative;
+                        border: solid 1px #dbdbdb;
+                        .border-radius(1.5vw);
+                        background: #fff;
+                        padding: 1.35vh 3vw;
+                        max-width: 65vw;
+                        word-break: break-word;
+                        line-height: 3vh;
+                        min-height: 6vh;
+                        text-align: left;
+                        span.arrow {
+                            position: absolute;
+                            width: 1.385vw;
+                            height: 2.5vw;
+                            top: 2vh;
+                        }
+                    }
+                }
+                // 左侧消息的特殊样式
+                &.left {
+                    img.head {
+                        float: left;
+                        margin-left: 2vw;
+                    }
+                    div.message_content {
+                        float: left;
+                        margin-left: 3vw;
+                        span.arrow {
+                            left: -1.385vw;
+                            background: url("/inc/chat_arrow_left.png") no-repeat;
+                            background-size: cover;
+                        }
+                    }
+                }
+                // 右侧消息的特殊样式
+                &.right {
+                    img.head {
+                        float: right;
+                        margin-right: 2vw;
+                    }
+                    div.message_content {
+                        float: right;
+                        margin-right: 3vw;
+                        p {
+                            background: @bg_green;
+                            // color: #1477fa;
+                            span.arrow {
+                                right: -1.385vw;
+                                background: url("/inc/chat_arrow_right.png") no-repeat;
+                                background-size: cover;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // 占位行
+    div.fixed_space {
+        height: 7vh;
+    }
+    // 底部按钮
+    div.footer_button {
+    	display: none; // 先隐藏，连接成功后再显示
+        position: fixed;
+        width: 100vw;
+        height: 7vh;
+        left: 0;
+        bottom: 0;
+        background: #f1f1f1;
+        border-top: solid 1px #e4e4e4;
+        // 文字框
+        input.message_content {
+            float: left;
+            width: 75vw;
+            height: 5vh;
+            margin: 1vh 0 0 2vw;
+            padding: 0 1vw;
+            border: solid 1px #ddd;
+            .border-radius(1.2vw);
+        }
+        // 发送按钮
+        input.weui-btn_primary {
+            float: right;
+            margin: 1.1vh 2.5vw 0 0;
+        }
+    }
+}
+
+// 待接入列表页
+body.Chat_tobeConnect {
+    // 列表ul
+    ul.list {
+        margin: 2vh 2vw;
+        display: table;
+        width: 96vw;
+        border-collapse: collapse;
+        // 行
+        li.line {
+            display: table-row;
+            width: 100%;
+            height: 4vh;
+            line-height: 4vh;
+            // 首行
+            &:nth-child(1) {
+                display: table-header-group;
+                span {
+                    font-weight: bold;
+                }
+            }
+            // 列
+            span {
+                display: table-cell;
+                height: 100%;
+                text-align: center;
+                vertical-align: middle;
+                border: solid 1px #ccc;
+                // id
+                &:nth-child(1) {
+                    width: 15%;
+                }
+                // 姓名
+                &:nth-child(2) {
+                    width: 25%;
+                }
+                // 客服
+                &:nth-child(3) {
+                    width: 25%;
+                }
+                // 操作
+                &:nth-child(4) {
+                    width: 35%;
+                    // 按钮
+                    input {
+                    	padding:0 2vw;
+                    	margin:0 0.5vw;
+                    	background: none;
+                    	border:solid 1px #666;
+                    }
+                }
+            }
+        }
+    }
+}
