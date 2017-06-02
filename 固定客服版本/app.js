@@ -136,9 +136,11 @@ app.use(express.static(path.join(__dirname, ''), {
 
 // routes
 var index = require('./routes/chat/chat.js');
+var mp = require('./routes/chat/mp.js');
 var p404 = require('./routes/404.js'); // 404
 
 app.use('/', index);
+app.use('/mp', mp);
 app.use(p404); // 404 || 500
 
 module.exports = app;

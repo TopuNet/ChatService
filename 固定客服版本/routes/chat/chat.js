@@ -5,10 +5,8 @@
 */
 
 var router = require("express").Router(),
-    mongo = require("mongodb"),
-    mongoUrl = "mongodb://localhost:27017/ChatServicer_RegularServicer";
-
-var async = require("async");
+    async = require("async"),
+    mongo = require("../../handle/mongodb");
 
 // 生成token
 var create_Token = function() {
@@ -103,17 +101,6 @@ router.get("/", function(req, res) {
         stoken = req.query.stoken || "";
 
         callback(null);
-    };
-
-    // 数据库连接
-    var mongodbConnect = function(callback) {
-
-        mongo.connect(mongoUrl, function(err, db) {
-            if (err) {
-                res.send("line 62: 数据库连接错误" + err.toString());
-            } else
-                callback(null, db);
-        });
     };
 
     // 进行一系列验证并获取会话
@@ -290,11 +277,11 @@ router.get("/", function(req, res) {
     // async
     async.waterfall([
         getParameters, // 获取地址栏
-        mongodbConnect, // 数据库连接
+        mongo.connect_async, // 数据库连接
         get_chat // 进行一系列验证并获取会话
     ], function(err, chat) {
 
-        // console.log("\n\nchat", 297, "chat\n", chat);
+        // console.log("\n\nchat", 284, "chat\n", chat);
 
         var render_para = {
             kind: kind,
@@ -305,7 +292,7 @@ router.get("/", function(req, res) {
             sname: sname,
             records: chat ? chat.records : []
         };
-        console.log("\n\nchat", 294, "render_para\n", render_para);
+        // console.log("\n\nchat", 294, "render_para\n", render_para);
         res.render("Chat/index.html", render_para);
 
     });

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>客服系统管理入口</title>
+    <% include head.html %>
+        <link href="/css/style.css" rel="stylesheet" type="text/css" />
+        <link href="/inc/weui.min.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class="chat_mp_login">
+    <div class="login_wrapper">
+        <div class="pic_code">
+        </div>
+        <div class="form">
+            <form method="post">
+                <ul>
+                    <li>
+                        <span>用户名：</span>
+                        <input type="text" class="username" />
+                    </li>
+                    <li>
+                        <span>密&nbsp;&nbsp;&nbsp;&nbsp;码：</span>
+                        <input type="password" class="passwd" />
+                    </li>
+                </ul>
+                <input type="submit" class="button weui-btn weui-btn_primary" value="登 录">
+            </form>
+            <div class="mask_preValid">请先完成上方验证</div>
+        </div>
+    </div>
+    <% include ../weui.html %>
+        <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat_mp_login"></script>
+</body>
+
+</html>

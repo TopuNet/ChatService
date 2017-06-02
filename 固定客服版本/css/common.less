@@ -1,12 +1,12 @@
 
 @font_size_mobile: 3.5vw; //默认字体大小（包括链接）
-@font_size_pc:12px;
+@font_size_pc:14px;
 @font_color: #000; //默认字体颜色（包括链接）
 // @font_gray: #585753;//灰色字体
 @font_color_hover: #333;//鼠标悬停的颜色
-// @bg_gray: #f4f4f4;//灰色部分的背景
+@bg_gray_dark: #464646;//深灰色背景
 @font_family: "微软雅黑", "Arial"; //默认字体（包括链接）
-@content_width: 800px; //版心宽度
+@content_width: 1200px; //版心宽度
 // @color_fff: #fff;
 // @color_333: #333;
 // @color_999: #999;
@@ -83,7 +83,7 @@ input:focus {
 }
 
 .min-content {
-    min-width: 1200px;
+    min-width: @content_width;
 }
 
 #editor {
@@ -95,7 +95,7 @@ input:focus {
     margin: 0 auto;
 }
 
-@media screen and (max-width: 799px) {
+@media screen and (max-device-width: 799px) {
     @{allTags},a,#editor {
         font-size: @font_size_mobile!important;
     }

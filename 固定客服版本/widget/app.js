@@ -1,30 +1,28 @@
-define([
-    "lib/zepto.min",
-    "lib/mobile_stop_moved",
-    "lib/landscape_mask"
-], function(
-    $zepto,
-    $mobile_stop_moved,
-    $landscape_mask
-) {
+define(function() {
 
-    var opt = {
-        selector: "div.stoped_wrapper", // 容器盒选择器（resize_toWindow为false时，需要在样式表中将此盒定高），无默认值
-        scroll: true, // 盒内可滚动，默认true
-        resize_toWindow: true // 将容器盒自动设置为有效窗口高度(window.innerHeight)，并监听窗口大小改变——解决ios safari浏览器底部工具栏遮挡页面的问题，默认true
-    };
-    $mobile_stop_moved.init(opt);
-    $landscape_mask.init();
-
-    var page_name = $("#script_page").attr("page");
+    var page_name = document.getElementById("script_page").getAttribute("page");
     switch (page_name) {
-        case "chat":
-            require(["app/chat"], function($obj) {
+
+        case "chat": // 移动端会话页
+            require(["modules/mobile_end_init", "app/chat"], function($mei, $obj) {
                 $obj.init();
             });
             break;
-        case "chat_tobeConnect":
-            require(["app/chat_tobeConnect"], function($obj) {
+
+        case "chat_tobeConnect": // 移动端会话列表页————不用了
+            require(["modules/mobile_end_init", "app/chat_tobeConnect"], function($mei, $obj) {
+                $obj.init();
+            });
+            break;
+
+        case "chat_mp_login": // pc端客服管理平台 - 登录页
+            require(["lib/jquery.min", "app/chat_mp_login"], function($jquery, $obj) {
+                $obj.init();
+            });
+            break;
+
+        case "chat_mp_index": // pc端客服管理平台 - 主管理页
+            require(["lib/jquery.min", "app/chat_mp_index"], function($jquery, $obj) {
                 $obj.init();
             });
             break;

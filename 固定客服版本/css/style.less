@@ -121,7 +121,7 @@ body.Chat {
     }
     // 底部按钮
     div.footer_button {
-    	display: none; // 先隐藏，连接成功后再显示
+        display: none; // 先隐藏，连接成功后再显示
         position: fixed;
         width: 100vw;
         height: 7vh;
@@ -192,13 +192,256 @@ body.Chat_tobeConnect {
                     width: 35%;
                     // 按钮
                     input {
-                    	padding:0 2vw;
-                    	margin:0 0.5vw;
-                    	background: none;
-                    	border:solid 1px #666;
+                        padding: 0 2vw;
+                        margin: 0 0.5vw;
+                        background: none;
+                        border: solid 1px #666;
                     }
                 }
             }
+        }
+    }
+}
+
+// 管理&客服 登录页
+body.chat_mp_login {
+    background: @bg_gray_dark;
+    // 登录盒
+    div.login_wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 280px;
+        height: 400px;
+        margin-left: -140px;
+        margin-top: -200px;
+        padding: 15px 10px;
+        background: #fff;
+        border: solid 1px @bg_gray_dark;
+        .border-radius(10px);
+        // 图片验证码
+        div.pic_code {
+            height: 220px;
+        }
+        // 表单
+        div.form {
+            position: relative;
+            // 行
+            li{
+                line-height: 35px;
+                // 第二行
+                &+li {
+                    border-top: dashed 1px #999;
+                }
+            }
+            // 登录按钮
+            input.button {
+                height: 40px;
+                line-height: 40px;
+                margin-top: 15px;
+                text-align: center;
+                cursor: pointer;
+                // 悬停样式
+                &:hover {
+                    background: #1a872e;
+                }
+            }
+            // 完成验证前的遮罩层
+            div.mask_preValid {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 140px;
+                line-height: 140px;
+                background: rgba(255, 255, 255, 0.93);
+                text-align: center;
+                font-weight: bold;
+                font-size: 18px;
+                color: #333;
+                border: dashed 1px #797979;
+            }
+        }
+    }
+}
+
+// 管理页
+body.chat_mp_index .wrapper {
+    // border: solid 3px #666;
+    display: table;
+    width: 100%;
+    height: 100vh;
+    border-collapse: collapse;
+    // 列
+    div.wrapper_cell {
+        display: table-cell;
+        border: solid 3px #666;
+        padding: 20px;
+        // 左侧
+        &.wrapper_left {
+            width: 40%;
+            // 添加新客服按钮
+            div.add_button {
+                font-size: 14px;
+                cursor: pointer;
+                // 悬停效果
+                &:hover {
+                    background: #f5f5f5;
+                }
+            }
+            // 客服列表
+            ul.servicer_list_ul {
+                margin-top: 30px;
+                // 行
+                & >li {
+                    // 列集合
+                    ul {
+                        display: table;
+                        width: 100%;
+                        margin: 10px 0;
+                        // 列
+                        li {
+                            display: table-cell;
+                            text-align: center;
+                            vertical-align: middle;
+                            // 头像
+                            img {
+                                width: 40px;
+                                height: 40px;
+                                margin: 0 10px;
+                            }
+                            // 用户名
+                            p {
+                                text-align: center;
+                                margin-top: 0px;
+                                width: 60px;
+                                height: 20px;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+                            // 非首列
+                            &+li {
+                                padding-top: 15px;
+                                // 按钮
+                                span {
+                                    cursor: pointer;
+                                    // 悬停样式
+                                    &:hover {
+                                        background: #ddd;
+                                    }
+                                }
+                            }
+                            // 接收新会话按钮列
+                            &.receiveNew_li {
+                                position: relative;
+                                // 按钮右上角气泡
+                                span.bubble {
+                                    position: absolute;
+                                    right: -3px;
+                                    top: 8px;
+                                    width: 26px;
+                                    height: 26px;
+                                    // 对勾图标
+                                    background: url("/images/bubble_radic.png") no-repeat;
+                                    background-size: cover;
+                                    // 叉子图标
+                                    &.no {
+                                        background-image: url("/images/bubble_times.png");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // 非首行
+                    &:not(.template)+li {
+                        border-top: dashed 1px #797979;
+                    }
+                    // 模板行
+                    &.template{
+                        display: none;
+                    }
+                }
+            }
+        }
+        // 右侧
+        &.wrapper_right {
+            width: 60%;
+        }
+    }
+}
+
+// 通用 - 管理 客服 添加/修改 表单部分
+div.mp_servicer_form {
+    width: 300px;
+    margin: 20px auto;
+    // 表单行
+    ul.form_line_ul>li {
+        height: 40px;
+        line-height: 40px;
+        // 非首行
+        &+li {
+            border-top: dashed 1px #999;
+        }
+        // 头像行
+        &.headimg_li {
+            height: auto;
+            span {
+                vertical-align: top;
+            }
+        }
+        // input
+        input {
+            width: 240px;
+        }
+        // 头像
+        ul.headimg_ul {
+            .inline-block();
+            width: 240px;
+            text-align: center;
+            // 单元
+            li {
+                .inline-block();
+                width: 50px;
+                height: 50px;
+                position: relative;
+                margin: 10px 0 0 25px;
+                cursor: pointer;
+                // 首列
+                &.first_cell {
+                    margin-left: 0;
+                }
+                // 头像
+                img {
+                    width: 50px;
+                    height: 50px;
+                }
+                // 选中印章
+                span {
+                    position: absolute;
+                    width: 26px;
+                    height: 26px;
+                    right: -5px;
+                    bottom: -5px;
+                }
+                // 选中单元
+                &.selected {
+                    cursor: default;
+                    // 选中印章
+                    span {
+                        background: url("/images/bubble_radic.png") no-repeat;
+                        background-size: cover;
+                    }
+                }
+            }
+        }
+    }
+    // 提交按钮
+    input.form_submit_button {
+        margin-top: 30px;
+        cursor: pointer;
+        // 悬停效果
+        &:hover {
+            background: #f5f5f5;
         }
     }
 }
