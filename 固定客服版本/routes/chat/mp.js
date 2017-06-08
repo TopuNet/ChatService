@@ -51,7 +51,7 @@ router.get("/", function(req, res) {
         if (err) {
             console.log("\n\nmp", 55, "err:\n", err);
         } else {
-            console.log("\n\nmp", 55, "servicers:\n", servicers);
+            // console.log("\n\nmp", 55, "servicers:\n", servicers);
             res.render("Chat/mp.html", {
                 servicers: servicers
             });
@@ -74,12 +74,14 @@ router.get("/login", function(req, res) {
 
 // 客服 - 添加/修改 表单生成页
 router.post("/servicer/get_form", function(req, res) {
-    var _id = req.query.id,
+    var _id = req.body._id,
         fs = require("fs"),
-        dirPath = "./images/headimg";
+        dirPath = "./images/headimg",
+        db;
 
     // 验证文件夹是否存在
-    var valid_dir = function(callback) {
+    var valid_dir = function(_db, callback) {
+        db = _db;
         fs.stat(dirPath, function(err) {
             if (err) {
                 callback(err);
@@ -100,14 +102,41 @@ router.post("/servicer/get_form", function(req, res) {
         });
     };
 
+    // 获取_id对应的客服记录
+    var get_servicer = function(files, callback) {
+        if (_id === "") // 添加
+            callback(null, files);
+        else { // 修改
+            var collection_servicers = db.collection("servicers");
+            collection_servicers.find({
+                _id: mongo.ObjectID(_id)
+            }).next(function(err, servicer) {
+                if (err)
+                    callback("未找到相关数据，更新失败");
+                else
+                    callback(null, files, servicer);
+            });
+        }
+    };
+
     // 执行async
     async.waterfall([
+        mongo.connect_async,
         valid_dir,
-        get_headimg
-    ], function(err, files) {
+        get_headimg,
+        get_servicer
+    ], function(err, files, servicer) {
         if (err)
             console.log("\n\nmp", 78, "\nerr:\n", err);
+        servicer = servicer || {
+            _id: "",
+            sname: "",
+            nickname: "",
+            passwd: "",
+            headimg: ""
+        };
         res.render("Chat/mp_servicer_form.html", {
+            servicer: servicer,
             dirPath: dirPath,
             files: files
         });
@@ -122,13 +151,14 @@ router.post("/servicer/form_deal", function(req, res) {
     var getForm = function(db, callback) {
         var head_replaceRegx = /^\./g; // 去掉headimg路径开头的.
         dataForm = {
-            id: req.body.id || 0,
+            _id: req.body._id || "",
             sname: req.body.sname.toString(),
             nickname: req.body.nickname.toString(),
             passwd: req.body.passwd.toString(),
             headimg: req.body.headimg.toString().replace(head_replaceRegx, "")
         };
-        dataForm.id = func.filterNoNum(dataForm.id.toString());
+        if (dataForm._id !== "")
+            dataForm._id = mongo.ObjectID(dataForm._id);
 
         callback(null, db, dataForm);
     };
@@ -137,7 +167,7 @@ router.post("/servicer/form_deal", function(req, res) {
     var dealData = function(db, dataForm, callback) {
         var collection_servicers = db.collection("servicers");
 
-        if (dataForm.id == "0") { // 没有id，执行添加流程
+        if (dataForm._id === "") { // 没有id，执行添加流程
             collection_servicers.find({
                 sname: dataForm.sname
             }).next(function(err, doc) {
@@ -158,7 +188,7 @@ router.post("/servicer/form_deal", function(req, res) {
                         if (err)
                             callback("添加记录失败，请稍后再试");
                         else {
-                            callback(null, r.insertedId);
+                            callback(null, 1, r.insertedId);
                         }
                     });
                 }
@@ -167,8 +197,9 @@ router.post("/servicer/form_deal", function(req, res) {
             // 查询重复账户
             collection_servicers.find({
                 sname: dataForm.sname,
-                _id: { $ne: dataForm.id }
+                _id: { $ne: dataForm._id }
             }).next(function(err, doc) {
+                // console.log("\n\nmp", 200, "doc:\n", doc);
                 if (err) {
                     callback(err);
                 } else if (doc) {
@@ -183,7 +214,7 @@ router.post("/servicer/form_deal", function(req, res) {
                     if (dataForm.passwd !== "")
                         updateItems.passwd = func.CreateHash(dataForm.passwd, "sha1", 1);
                     collection_servicers.findOneAndUpdate({
-                        _id: dataForm.id
+                        _id: dataForm._id
                     }, {
                         $set: updateItems
                     }, function(err, r) {
@@ -194,7 +225,7 @@ router.post("/servicer/form_deal", function(req, res) {
                         else if (!r.value) {
                             callback("未找到相关数据，更新失败");
                         } else
-                            callback(null);
+                            callback(null, 2, r.value._id);
                     });
                 }
             });
@@ -207,11 +238,13 @@ router.post("/servicer/form_deal", function(req, res) {
         mongo.connect_async, // 连接数据库，返回db
         getForm, // 获取表单数据
         dealData // 添加或修改数据
-    ], function(err, insertedId) {
+    ], function(err, kind, insertedId) { // kind: 1-添加 2-修改
+        insertedId = insertedId || "";
+        // console.log("\n\nmp", 240, "err:\n", err);
         if (err) {
             res.send(err);
         } else {
-            res.send("success:" + insertedId);
+            res.send("success:" + kind + ":" + insertedId);
         }
     });
 });
@@ -264,10 +297,10 @@ router.post("/servicer/alive", function(req, res) {
                             callback(null);
                         }
                     }
-                )
+                );
             }
         });
-    }
+    };
 
     // 执行async
     async.waterfall([
@@ -279,6 +312,60 @@ router.post("/servicer/alive", function(req, res) {
     ], function(err) {
         if (err) {
             // console.log("\n\nmp", 276, "err:\n", err);
+            res.send(err);
+        } else {
+            res.send("success");
+        }
+    });
+});
+
+// 客服 - 删除。成功输出"success"，失败输出错误信息
+router.post("/servicer/del", function(req, res) {
+    var _id;
+
+    // 验证bid
+    var check_bid = function(callback) {
+        if (login_bid === 0)
+            callback("修改失败，请稍后再试");
+        else
+            callback(null);
+    };
+
+    // 获得表单参数
+    var get_Params = function(callback) {
+        _id = req.body._id;
+
+        if (!_id)
+            callback("修改失败，请稍后再试");
+
+        _id = mongo.ObjectID(_id);
+
+        callback(null);
+    };
+
+    // 执行删除
+    var deal_del = function(db, callback) {
+        var collection_servicers = db.collection("servicers");
+
+        collection_servicers.deleteOne({
+            _id: _id
+        }, function(err) {
+            if (err)
+                callback(err);
+            else
+                callback(null);
+        });
+    };
+
+    // 执行async
+    async.waterfall([
+        check_login_status,
+        check_bid,
+        get_Params,
+        mongo.connect_async,
+        deal_del
+    ], function(err) {
+        if (err) {
             res.send(err);
         } else {
             res.send("success");

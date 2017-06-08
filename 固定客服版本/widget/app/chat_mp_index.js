@@ -2,6 +2,9 @@
 	chat管理平台页js
 	高京
 	2017-05-26
+	that = {
+		servicer_form_layershow: 添加修改客服的表单弹层对象
+	}
 */
 
 define(["lib/LayerShow"], function($LayerShow) {
@@ -22,16 +25,39 @@ define(["lib/LayerShow"], function($LayerShow) {
         button_add_click_Listener: function() {
             var that = this;
 
+            // 监听添加按钮点击
+            $(".add_button").unbind().on("click", function() {
+                var callback = function(result) {
+                    that.showLayer_add_servicer.apply(that, [result]);
+                };
+                that.get_form.apply(that, [callback]);
+            });
+        },
+
+        // 获取添加/修改表单数据
+        // callback(result): 成功回调
+        // _id: 记录id，修改用
+        get_form: function(callback, _id) {
+
+            // var that = this;
+            _id = _id || "";
+            var loadingToast = $(".loadingToast");
+
             // ajax获得添加客服的表单代码
             $.ajax({
                 url: "/mp/servicer/get_form",
                 type: "post",
+                data: {
+                    _id: _id
+                },
+                beforeSend: function() {
+                    loadingToast.find(".weui-toast__content").text("加载中");
+                    loadingToast.css("display", "block");
+                },
                 success: function(result) {
-
-                    // 监听添加按钮点击
-                    $(".add_button").unbind().on("click", function() {
-                        that.showLayer_add_servicer.apply(that, [result]);
-                    });
+                    loadingToast.css("display", "none");
+                    if (callback)
+                        callback(result);
                 }
             });
         },
@@ -47,6 +73,12 @@ define(["lib/LayerShow"], function($LayerShow) {
                     case 1:
                         that.button_inline_click_1.apply(that, [li_obj]);
                         break;
+                    case 2:
+                        that.button_inline_click_2.apply(that, [li_obj.parents(".line_li").attr("_id")]);
+                        break;
+                    case 3:
+                        that.button_inline_click_3.apply(that, [li_obj.parents(".line_li")]);
+                        break;
                     default:
                         break;
                 }
@@ -54,7 +86,7 @@ define(["lib/LayerShow"], function($LayerShow) {
         },
         // 行内按钮点击-1-接收新会话
         button_inline_click_1: function(button_obj) {
-            var that = this;
+            // var that = this;
 
             var bubble_obj = button_obj.find(".bubble");
             var hasNo = bubble_obj.hasClass("no");
@@ -85,14 +117,76 @@ define(["lib/LayerShow"], function($LayerShow) {
                         iosDialog2.css("display", "block");
                     }
                 }
-            })
+            });
         },
-        // 弹层-添加客服
+        // 行内按钮点击-2-修改
+        button_inline_click_2: function(_id) {
+            var that = this;
+
+            var callback = function(result) {
+                that.showLayer_add_servicer.apply(that, [result]);
+            };
+
+            that.get_form.apply(that, [callback, _id]);
+        },
+        // 行内按钮点击-3-删除
+        button_inline_click_3: function(line_obj) {
+            // var that = this;
+            var loadingToast = $(".loadingToast"),
+                iosDialog1 = $("#iosDialog1"),
+                iosDialog2 = $("#iosDialog2");
+
+            var _id = line_obj.attr("_id");
+
+            // 执行ajax
+            var _deal_ajax = function(_id) {
+                $.ajax({
+                    url: "/mp/servicer/del",
+                    type: "post",
+                    data: {
+                        _id: _id
+                    },
+                    beforeSend: function() {
+                        loadingToast.find(".weui-toast__content").text("处理中");
+                        loadingToast.css("display", "block");
+                    },
+                    success: function(result) {
+                        if (result == "success") { // 删除成功
+                            line_obj.animate({
+                                height: 0
+                            }, 200, function() {
+                                line_obj.remove();
+                                loadingToast.css("display", "none");
+                            });
+                        } else { // 失败
+                            iosDialog2.find(".weui-dialog__bd").text(result);
+                            iosDialog2.find(".weui-dialog__btn_primary").unbind().on("click", function() {
+                                iosDialog2.css("display", "none");
+                            });
+                            iosDialog2.css("display", "block");
+                        }
+                    }
+                });
+            };
+
+            // 发起删除询问
+            iosDialog1.find(".weui-dialog__title").text("删除确认");
+            iosDialog1.find(".weui-dialog__bd").text("此操作不可逆，是否继续？");
+            iosDialog1.find(".weui-dialog__btn_default").text("取消").unbind().on("click", function() {
+                iosDialog1.css("display", "none");
+            });
+            iosDialog1.find(".weui-dialog__btn_primary").text("继续").attr("_id", _id).unbind().on("click", function() {
+                iosDialog1.css("display", "none");
+                _deal_ajax($(this).attr("_id"));
+            });
+            iosDialog1.css("display", "block");
+        },
+        // 弹层-添加/修改客服
         showLayer_add_servicer: function(form_html) {
             var that = this;
 
             // 创建新LayerShow实例。注意：不要反复的创建实例，每个实例会在show()之后创建一组dom
-            var layershow = new $LayerShow();
+            that.servicer_form_layershow = new $LayerShow();
 
             // 显示
             var opt = {
@@ -129,9 +223,9 @@ define(["lib/LayerShow"], function($LayerShow) {
                 }
 
             };
-            layershow.show(opt);
+            that.servicer_form_layershow.show(opt);
         },
-        // 监听添加客服表单
+        // 监听添加/修改客服表单
         showLayer_add_servicer_form_Listener: function() {
             var that = this;
 
@@ -143,9 +237,9 @@ define(["lib/LayerShow"], function($LayerShow) {
         },
         // 监听头像点击
         headimg_click_Lisetener: function() {
-            var that = this;
+            // var that = this;
 
-            $(".headimg_ul li:not(.selected)").unbind().click(function() {
+            $(".headimg_ul li").unbind().click(function() {
                 $(this).siblings(".selected").removeClass("selected");
                 $(this).addClass("selected");
             });
@@ -163,7 +257,8 @@ define(["lib/LayerShow"], function($LayerShow) {
         // 表单提交验证
         form_submit_check: function(form_obj) {
             var that = this;
-            var sname = form_obj.find("input.sname").val(),
+            var _id = form_obj.find(".form_line_ul").attr("_id"),
+                sname = form_obj.find("input.sname").val(),
                 nickname = form_obj.find("input.nickname").val(),
                 passwd = form_obj.find("input.passwd").val(),
                 headimg_li = form_obj.find(".selected");
@@ -175,7 +270,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                 error_str = "请键入账号";
             } else if (nickname === "") {
                 error_str = "请键入昵称";
-            } else if (passwd === "") {
+            } else if (passwd === "" && _id === "") {
                 error_str = "请键入密码";
             } else if (headimg_li.length === 0) {
                 error_str = "请选择头像";
@@ -193,6 +288,7 @@ define(["lib/LayerShow"], function($LayerShow) {
             } else {
 
                 that.form_submit_deal.apply(that, [form_obj, {
+                    _id: _id,
                     sname: sname,
                     nickname: nickname,
                     passwd: passwd,
@@ -214,38 +310,78 @@ define(["lib/LayerShow"], function($LayerShow) {
                     loadingToast.css("display", "block");
                 },
                 success: function(result) {
-                    // console.log(result);
+                    var reg = /^success:(\d):(.+)$/i;
+                    var reg_result = reg.exec(result);
 
-                    // 追加新行
-                    var list_ul = $(".servicer_list_ul");
-                    var li = list_ul.find(".template").clone().removeClass("template");
-                    var reg = /^success:/i;
-                    li.attr("_id", result.replace(reg, ""));
-                    li.find(".line_item_ul img").attr("src", form_data.headimg);
-                    li.find(".line_item_ul p").text(form_data.nickname);
-                    li.appendTo(list_ul);
+                    if (!reg_result) { // 失败
 
-                    // 对新行内按钮进行监听
-                    that.button_inline_click_Listener.apply(that);
+                        var iosDialog2 = $("#iosDialog2");
+                        iosDialog2.find(".weui-dialog__bd").text(result);
+                        iosDialog2.find(".weui-dialog__btn_primary").unbind().on("click", function() {
+                            iosDialog2.css("display", "none");
+                        });
+                        iosDialog2.css("display", "block");
 
-                    // 表单还原
-                    form_obj.find("input:not(.form_submit_button)").val("");
-                    form_obj.find(".headimg_ul li.selected").removeClass("selected");
+                        loadingToast.css("display", "none");
 
-                    // 隐藏loading
-                    loadingToast.css("display", "none");
+                    } else { // 成功
 
-                    // 完成提示
-                    toast.find(".weui-toast__content").text("添加成功");
-                    var toast_hide = function() {
-                        toast.css("display", "none");
-                        form_obj.find("input.sname").focus();
-                    };
-                    toast.unbind().on("click", toast_hide);
-                    toast.css("display", "block");
-                    setTimeout(toast_hide, 1000);
+                        // ul外盒
+                        var list_ul = $(".servicer_list_ul");
+                        var li;
+
+                        switch (reg_result[1]) {
+                            case "1": // 添加
+
+                                // 追加新行
+                                li = list_ul.find(".template").clone().removeClass("template");
+                                li.attr("_id", reg_result[2]);
+                                li.find(".line_item_ul img").attr("src", form_data.headimg);
+                                li.find(".line_item_ul p").text(form_data.nickname);
+                                li.appendTo(list_ul);
+
+                                // 对新行内按钮进行监听
+                                that.button_inline_click_Listener.apply(that);
+
+                                break;
+
+                            case "2": // 修改
+
+                                // 修改行内信息
+                                li = list_ul.find("li.line_li[_id=" + reg_result[2] + "]");
+                                if (li) {
+                                    li.find(".line_item_ul img").attr("src", form_data.headimg);
+                                    li.find(".line_item_ul p").text(form_data.nickname);
+                                }
+
+                                // 关闭表单盒
+                                that.servicer_form_layershow.close();
+
+                                break;
+                            default:
+                                break;
+                        }
+
+                        // 表单还原
+                        form_obj.find("input:not(.form_submit_button)").val("");
+                        form_obj.find(".headimg_ul li.selected").removeClass("selected");
+
+                        // 隐藏loading
+                        loadingToast.css("display", "none");
+
+                        // 完成提示
+                        toast.find(".weui-toast__content").text("操作成功");
+                        var toast_hide = function() {
+                            toast.css("display", "none");
+                            form_obj.find("input.sname").focus();
+                        };
+                        toast.unbind().on("click", toast_hide);
+                        toast.css("display", "block");
+                        setTimeout(toast_hide, 1000);
+
+                    }
                 }
-            })
+            });
         }
     };
 
