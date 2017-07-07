@@ -19,6 +19,47 @@ var functions = {
             });
         });
     },
+    // 日期格式化_仿微信
+    // _date: 日期
+    dateFormat_wx: function(_date) {
+
+        var date = new Date(_date);
+
+        var year = date.getFullYear(),
+            month = date.getMonth() + 1,
+            day = date.getDate(),
+            hour = date.getHours(),
+            minute = date.getMinutes();
+
+        var str = "";
+        date = new Date();
+
+        if (date.getFullYear() == year && date.getMonth() + 1 == month && date.getDate() == day)
+            str = "";
+        else {
+            str = year + "年";
+            // if (month < 10)
+            //     str += "0";
+            str += month + "月";
+            // if (day < 10)
+            //     str += "0";
+            str += day + "日 ";
+        }
+
+
+        if (hour < 10)
+            str += "0";
+        str += hour + ":";
+        if (minute < 10)
+            str += "0";
+        str += minute;
+        // str += ":";
+        // if (second < 10)
+        //     str += "0";
+        // str += second;
+
+        return str;
+    },
     /*
         高京
         2016-09-10
@@ -338,7 +379,7 @@ var functions = {
      *@20160103
      * 传入字符串。返回字符串长度数值
      */
-    
+
     StrLength: function(Str) {
         var _i = 0;
         var _n = Str.length;
@@ -361,10 +402,9 @@ var functions = {
 
 if (typeof define === "function" && define.amd) {
     define(function() {
-        functions.init();
+        // functions.init();
         return functions;
     });
-}
-else{
+} else {
     functions.init();
 }

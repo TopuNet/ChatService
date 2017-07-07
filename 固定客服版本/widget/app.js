@@ -26,5 +26,11 @@ define(function() {
                 $obj.init();
             });
             break;
+
+        case "chat_servicer": // pc端客服会话页
+            require(["lib/jquery.min", "app/chat_servicer"], function($jquery, $obj) {
+                $obj.init();
+            });
+            break;
     }
 });

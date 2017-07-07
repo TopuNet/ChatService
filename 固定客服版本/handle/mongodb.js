@@ -8,6 +8,7 @@ exports.connect_async = function(callback) {
 
     mongo.connect(mongoUrl, function(err, db) {
         if (err) {
+        	db.close();
             callback("mongodb连接错误" + err.toString());
         } else
             callback(null, db);

@@ -8,7 +8,8 @@ var router = require("express").Router(),
     func = require("../../handle/functions"),
     async = require("async"),
     mongo = require("../../handle/mongodb"),
-    login_bid; // 验证登录状态后的bid，0代表失败
+    login_bid, // 验证登录状态后的bid，0代表失败
+    db;
 
 // 验证登录状态_async模式。bid存入login_bid中，0代表未登录
 var check_login_status = function(callback) {
@@ -33,7 +34,9 @@ router.get("/", function(req, res) {
     };
 
     // 获取客服列表
-    var get_servicer_list = function(db, callback) {
+    var get_servicer_list = function(_db, callback) {
+        db = _db;
+
         var collection_servicers = db.collection("servicers");
 
         collection_servicers.find({
@@ -48,6 +51,8 @@ router.get("/", function(req, res) {
     // 处理async结果
     // 商家id，-1为平台
     var async_result = function(err, servicers) {
+        db.close();
+
         if (err) {
             console.log("\n\nmp", 55, "err:\n", err);
         } else {
@@ -76,8 +81,7 @@ router.get("/login", function(req, res) {
 router.post("/servicer/get_form", function(req, res) {
     var _id = req.body._id,
         fs = require("fs"),
-        dirPath = "./images/headimg",
-        db;
+        dirPath = "./images/headimg";
 
     // 验证文件夹是否存在
     var valid_dir = function(_db, callback) {
@@ -126,6 +130,8 @@ router.post("/servicer/get_form", function(req, res) {
         get_headimg,
         get_servicer
     ], function(err, files, servicer) {
+        db.close();
+
         if (err)
             console.log("\n\nmp", 78, "\nerr:\n", err);
         servicer = servicer || {
@@ -148,7 +154,9 @@ router.post("/servicer/form_deal", function(req, res) {
     var dataForm; // 表单数据
 
     // 获取表单数据
-    var getForm = function(db, callback) {
+    var getForm = function(_db, callback) {
+        db = _db;
+
         var head_replaceRegx = /^\./g; // 去掉headimg路径开头的.
         dataForm = {
             _id: req.body._id || "",
@@ -160,11 +168,11 @@ router.post("/servicer/form_deal", function(req, res) {
         if (dataForm._id !== "")
             dataForm._id = mongo.ObjectID(dataForm._id);
 
-        callback(null, db, dataForm);
+        callback(null, dataForm);
     };
 
     // 添加或修改数据
-    var dealData = function(db, dataForm, callback) {
+    var dealData = function(dataForm, callback) {
         var collection_servicers = db.collection("servicers");
 
         if (dataForm._id === "") { // 没有id，执行添加流程
@@ -219,7 +227,7 @@ router.post("/servicer/form_deal", function(req, res) {
                         $set: updateItems
                     }, function(err, r) {
 
-                        console.log("\n\nmp", 121, "r:\n", r);
+                        // console.log("\n\nmp", 230, "r:\n", r);
                         if (err)
                             callback("更新记录失败，请稍后再试");
                         else if (!r.value) {
@@ -239,6 +247,9 @@ router.post("/servicer/form_deal", function(req, res) {
         getForm, // 获取表单数据
         dealData // 添加或修改数据
     ], function(err, kind, insertedId) { // kind: 1-添加 2-修改
+
+        db.close();
+
         insertedId = insertedId || "";
         // console.log("\n\nmp", 240, "err:\n", err);
         if (err) {
@@ -262,7 +273,9 @@ router.post("/servicer/alive", function(req, res) {
     };
 
     // 获取地址栏
-    var getParams = function(db, callback) {
+    var getParams = function(_db, callback) {
+
+        db = _db;
 
         // console.log("\n\nmp", 234, "mongo:\n", mongo);
 
@@ -270,11 +283,11 @@ router.post("/servicer/alive", function(req, res) {
         var findData = {
             _id: mongo.ObjectID(id)
         };
-        callback(null, db, findData);
+        callback(null, findData);
     };
 
     // 执行修改
-    var deal = function(db, findData, callback) {
+    var deal = function(findData, callback) {
 
         // console.log("\n\nmp", 244, "findData:\n", findData);
 
@@ -310,6 +323,9 @@ router.post("/servicer/alive", function(req, res) {
         getParams, // 获取地址栏
         deal // 执行修改
     ], function(err) {
+
+        db.close();
+
         if (err) {
             // console.log("\n\nmp", 276, "err:\n", err);
             res.send(err);
@@ -344,7 +360,10 @@ router.post("/servicer/del", function(req, res) {
     };
 
     // 执行删除
-    var deal_del = function(db, callback) {
+    var deal_del = function(_db, callback) {
+
+        db = _db;
+
         var collection_servicers = db.collection("servicers");
 
         collection_servicers.deleteOne({
@@ -365,6 +384,9 @@ router.post("/servicer/del", function(req, res) {
         mongo.connect_async,
         deal_del
     ], function(err) {
+
+        db.close();
+
         if (err) {
             res.send(err);
         } else {

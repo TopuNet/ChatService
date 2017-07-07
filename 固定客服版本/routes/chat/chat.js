@@ -61,29 +61,28 @@ router.get("/", function(req, res) {
     // [地址栏] 访问者种类: 1-客户 2-客服
     var kind = 0;
 
-    // [地址栏] 客户id
-    var cid = 0;
+    // [地址栏] 客户id/token
+    var cid = "";
 
     // [地址栏] 商户id，-1为平台
     var bid = 0;
 
-    // [地址栏] 客户token
-    var ctoken = "";
-
-    // [地址栏] 客服token
-    var stoken = "";
+    // [地址栏] 客服id
+    // var sid = "";
 
     // 客户姓名
     var cname = "";
 
+    // 客户头像
+    var c_headimg = "/images/login_icon.png";
+
     // 客服姓名
     var sname = "";
 
-    // （不用了）消息记录存放位置
-    // var dirPath = "./ChatRecord";
+    // 客服头像
+    var s_headimg = "";
 
-    // （不用了）客户消息记录存放的子文件夹的前缀，后接客户id
-    // var dirCustomerPrefix = "customer_";
+    var db;
 
     // 获取地址栏
     var getParameters = function(callback) {
@@ -91,23 +90,22 @@ router.get("/", function(req, res) {
         kind = req.query.kind || 0;
         kind = parseFloat(kind) || 0;
 
-        cid = req.query.cid || 0;
-        cid = parseFloat(cid) || 0;
+        cid = req.query.cid || "";
 
         bid = req.query.bid || 0;
         bid = parseFloat(bid) || 0;
-
-        ctoken = req.query.ctoken || "";
-        stoken = req.query.stoken || "";
 
         callback(null);
     };
 
     // 进行一系列验证并获取会话
     // db: mongodb连接对象
-    var get_chat = function(db, callback) {
+    var get_chat = function(_db, callback) {
 
-        // 客户集合
+
+        db = _db;
+
+        // 会话集合
         var collection_chats = db.collection("chats");
 
         // 客服集合
@@ -115,12 +113,12 @@ router.get("/", function(req, res) {
 
         // console.log("\n\nchat", 73, "collection\n", collection_waiting);
 
-        if (kind === 0 || cid === 0 || bid === 0)
-            res.send("line 81: 参数不正确");
+        if (kind === 0 || cid === "" || bid === 0)
+            res.send("line 112: 参数不正确");
         else {
 
 
-            // 可以通过restful api接口验证客户合法性和获得客户姓名。
+            // 可以通过restful api接口验证客户合法性和获得客户昵称、头像。
             var api_result = function() {
 
                 cname = "客户";
@@ -134,14 +132,14 @@ router.get("/", function(req, res) {
                         if (!chat) {
 
                             if (kind == 2)
-                                res.send("line 107: 参数不正确");
+                                res.send("line 130: 参数不正确");
 
                             // 指派客服
                             var appoint_servicer = function(_callback) {
 
                                 // 获得该商户全部客服
                                 var get_servicers = function(__callback) {
-                                    collection_servicers.find({ "alive": true, "bid": bid }, { "sid": 1 }).toArray(function(err, servicers) {
+                                    collection_servicers.find({ "alive": true, "bid": bid }).toArray(function(err, servicers) {
                                         if (err) {
                                             api_result_callback("noServicers");
                                         } else {
@@ -152,11 +150,14 @@ router.get("/", function(req, res) {
 
                                 // 获得会话数量最少的客服
                                 var get_chats_count = function(servicers, __callback) {
+
+                                    // console.log("\n\nchat", 152, "servicers:\n", servicers);
+
                                     collection_chats.group(
                                         ["sid"], {}, { "count": 0 },
                                         "function(now, prev) {prev.count++;}",
                                         function(err, r) {
-                                            // console.log("\n\nchat", 116, "r\n", r);
+                                            // console.log("\n\nchat", 158, "r\n", r);
 
 
                                             var count_min = null, // 当前最少会话数。遍历时当有客服会话数小于此值时，则更新
@@ -164,22 +165,25 @@ router.get("/", function(req, res) {
 
                                             // 判断客服的会话数量是否为最少，是的话更新count_min和servicer两个变量
                                             var check_count_min = function(_servicer) {
-
-                                                // console.log("\n\nchat", 125, "count_min:", count_min, "_servicer.count:", _servicer.count, "!count_min:", (!count_min), "_servicer.count<count_min:", (_servicer.count < count_min));
+                                                // console.log("\n\nchat", 166, "_servicer:\n", _servicer);
+                                                // console.log("\n\nchat", 167, "count_min:", count_min, "_servicer.count:", _servicer.count, "!count_min:", (!count_min), "_servicer.count<count_min:", (_servicer.count < count_min));
                                                 if (count_min === null || _servicer.count < count_min) {
                                                     servicer = _servicer;
                                                     count_min = _servicer.count;
                                                 }
                                             };
 
+
                                             servicers.forEach(function(s) {
+                                                // console.log("\n\nchat", 177, "s:\n", s);
                                                 s.count = 0;
                                                 r.some(function(_r, _index) {
                                                     // console.log(index, _index);
-                                                    if (s.sid == _r.sid) {
+                                                    // console.log("\n\nchat", 180, "s._id==_r.sid:", s._id, s._id.toString() == _r.sid.toString(), _r.sid);
+                                                    if (s._id.toString() == _r.sid.toString()) {
                                                         s.count = _r.count;
                                                         r.splice(_index, 1);
-                                                        check_count_min(s);
+                                                        // check_count_min(s);
                                                         return true;
                                                     }
                                                 });
@@ -197,7 +201,7 @@ router.get("/", function(req, res) {
                                 // 执行async
                                 async.waterfall([
                                     get_servicers, // 获得全部客服
-                                    get_chats_count, // 遍历客服，获得会话数量
+                                    get_chats_count // 遍历客服，获得会话数量
                                 ], function(err, servicer) {
                                     _callback(null, servicer);
                                 });
@@ -205,13 +209,19 @@ router.get("/", function(req, res) {
 
                             // 添加会话
                             var add_chat = function(servicer, _callback) {
-                                var date = new Date();
+
                                 chat = {
                                     "cid": cid,
+                                    "client": {
+                                        "nickname": cname + "_" + cid,
+                                        "headimg": c_headimg
+                                    },
                                     "bid": bid,
-                                    "sid": servicer.sid,
-                                    "last_time": date.getTime(),
-                                    "records": []
+                                    "sid": servicer._id,
+                                    "servicer": {
+                                        "nickname": servicer.nickname,
+                                        "headimg": servicer.headimg
+                                    }
                                 };
                                 collection_chats.insertOne(chat, function(err) {
                                     _callback(err, chat);
@@ -274,14 +284,38 @@ router.get("/", function(req, res) {
         }
     };
 
+    // 获得消息记录
+    var get_records = function(chat, callback) {
+        var collection_records = db.collection("records");
+
+        collection_records.find({
+            cid: chat.cid.toString(),
+            sid: chat.sid.toString()
+        }).sort([
+            ["timestamp", -1],
+            ["_id", -1]
+        ]).toArray(function(err, arr) {
+
+            if (err) {
+                arr = [];
+            }
+            // console.log("\n\nchat", 292, "records:\n", arr);
+
+            callback(null, chat, arr);
+        });
+    };
+
     // async
     async.waterfall([
         getParameters, // 获取地址栏
         mongo.connect_async, // 数据库连接
-        get_chat // 进行一系列验证并获取会话
-    ], function(err, chat) {
+        get_chat, // 进行一系列验证并获取会话
+        get_records // 获取records
+    ], function(err, chat, records) {
 
-        // console.log("\n\nchat", 284, "chat\n", chat);
+        db.close();
+
+        // console.log("\n\nchat", 318, "chat\n", chat);
 
         var render_para = {
             kind: kind,
@@ -289,8 +323,10 @@ router.get("/", function(req, res) {
             cid: cid,
             sid: chat ? chat.sid : 0,
             cname: cname,
-            sname: sname,
-            records: chat ? chat.records : []
+            sname: chat ? chat.servicer.nickname : "",
+            client_headimg: chat ? chat.client.headimg : "",
+            servicer_headimg: chat ? chat.servicer.headimg : "",
+            records: records
         };
         // console.log("\n\nchat", 294, "render_para\n", render_para);
         res.render("Chat/index.html", render_para);
@@ -299,6 +335,7 @@ router.get("/", function(req, res) {
 
 });
 
+/*
 router.get("/list", function(req, res) {
 
     var async = require("async");
@@ -351,5 +388,6 @@ router.get("/list", function(req, res) {
         });
     });
 });
+*/
 
 module.exports = router;

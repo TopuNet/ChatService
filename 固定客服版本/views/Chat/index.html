@@ -2,35 +2,17 @@
 <html lang="en">
 
 <head>
-    <title>客服系统</title><% include head.html %>
-    <link href="/css/style.css" rel="stylesheet" type="text/css" />
-    <link href="/inc/weui.min.css" rel="stylesheet" type="text/css" />
+    <title>客服系统-移动端</title>
+    <% include head.html %>
+        <link href="/css/style.css" rel="stylesheet" type="text/css" />
+        <link href="/inc/weui.min.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body class="Chat">
     <% if(!err){ %>
         <div class="stoped_wrapper">
             <ul class="list">
-                <% // class="center" 为居中的系统消息；left为居左的消息；right为居右的消息。li中的img的路径写在行内src中 %>
-                    <li class="center template">
-                        <div class="wrapper">
-                            <p>2017年5月1日 15:33:00</p>
-                        </div>
-                    </li>
-                    <li class="message left template">
-                        <img class="head" src="" />
-                        <div class="message_content">
-                            <span class="name">高京</span>
-                            <p><span class="arrow"></span>23232323
-                                <br />sdfsdfsdf</p>
-                        </div>
-                    </li>
-                    <li class="message right template">
-                        <img class="head" src="" />
-                        <div class="message_content">
-                            <p><span class="arrow"></span>sdfsdfsdf</p>
-                        </div>
-                    </li>
+                <% include  comm_talk_list_template.html %>
             </ul>
             <div class="fixed_space"></div>
         </div>
@@ -50,11 +32,9 @@
                     "sid": "<%=sid%>",
                     "cname": "<%=cname%>",
                     "sname": "<%=sname%>",
-                    "records": []
+                    "client_headimg": "<%=client_headimg%>",
+                    "servicer_headimg":"<%=servicer_headimg%>"
                 };
-                <% records.forEach(function(r,index){ %>
-                    Base_meta.records.push(<%=r%>);
-                <% }); %>
                 </script>
                 <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat"></script>
 </body>

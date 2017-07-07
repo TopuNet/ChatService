@@ -10,7 +10,10 @@ var uuid = require('node-uuid');
 var config = require('./config.js');
 var fs = require('fs'); //文件操作模块，updateMember用
 
+exports.cookie_pre = "chatgj_"; // cookie名前缀
 
+// exports.socket_global_1 = []; // 存放客户端socket
+// exports.socket_global_2 = []; // 存放客服端socket
 
 exports.session_secret = "1z4d7r2t5h8m3k6o8a4z5e1g7f5u3a0y"; //session密钥
 

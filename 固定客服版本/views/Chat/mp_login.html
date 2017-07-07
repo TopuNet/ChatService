@@ -10,10 +10,10 @@
 
 <body class="chat_mp_login">
     <div class="login_wrapper">
-        <div class="pic_code">
+        <div class="logo_icon">
         </div>
         <div class="form">
-            <form method="post">
+            <form>
                 <ul>
                     <li>
                         <span>用户名：</span>
@@ -26,10 +26,14 @@
                 </ul>
                 <input type="submit" class="button weui-btn weui-btn_primary" value="登 录">
             </form>
-            <div class="mask_preValid">请先完成上方验证</div>
         </div>
     </div>
     <% include ../weui.html %>
+        <script type="text/javascript">
+        var Base_meta = {
+            from: "<%=from%>"
+        };
+        </script>
         <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat_mp_login"></script>
 </body>
 

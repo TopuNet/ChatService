@@ -30,6 +30,43 @@ app.engine('.html', ejs.__express);
 //app.set('view engine', 'ejs');
 
 /*
+ * 高京临时
+ *【同步】将时间戳转换为日期+时间，并格式化输出字符串。错误则返回""
+ * 
+ */
+app.locals.formatTimeStamp = function(timestamp) {
+    var d = new Date(timestamp);
+    if (d.toString()=="Invalid Date")
+        return "";
+    else {
+        d = {
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            date: d.getDate(),
+            hour: d.getHours(),
+            minute: d.getMinutes()
+        };
+
+        // 拼接格式化字符串
+        var str,
+            now = new Date();
+        if (now.getFullYear() == d.year && now.getMonth() + 1 == d.month && now.getDate() == d.date) {
+            str = "";
+            if (d.hour < 10)
+                str += "0";
+            str += d.hour + ":";
+            if (d.minute < 10)
+                str += d.minute;
+            str += d.minute;
+        } else {
+            str = d.year + "/" + d.month + "/" + d.date;
+        }
+
+        return str;
+    }
+};
+
+/*
  * 陈斌
  *【同步】判断逗号分隔的主码中是否含有某一主码。返回true或false
  * str 被比较字符串。可以为逗号分隔的多个主码，也可以是尖括号包围的多个主码
@@ -134,13 +171,20 @@ app.use(express.static(path.join(__dirname, ''), {
     maxAge: '0' // dev
 }));
 
-// routes
+// 客户会话
 var index = require('./routes/chat/chat.js');
-var mp = require('./routes/chat/mp.js');
-var p404 = require('./routes/404.js'); // 404
-
 app.use('/', index);
+
+// 商家/平台 管理
+var mp = require('./routes/chat/mp.js');
 app.use('/mp', mp);
-app.use(p404); // 404 || 500
+
+// 客服会话
+var servicer = require('./routes/chat/servicer.js');
+app.use('/servicer', servicer);
+
+// 404 || 500
+var p404 = require('./routes/404.js');
+app.use(p404);
 
 module.exports = app;
