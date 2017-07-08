@@ -11,8 +11,6 @@
     }
 */
 
-var GLOBAL_SOCKET_URL = "http://localhost:4545";
-
 define([
     "lib/socket.io.min",
     "lib/functions"
@@ -161,7 +159,7 @@ define([
         // 连接socket
         socket_connect: function() {
             var that = this;
-            that.socket = $io.connect(GLOBAL_SOCKET_URL);
+            that.socket = $io.connect(Base_meta.GLOBAL_SOCKET_URL);
 
             // 监听socket连接成功
             that.socket_connect_success.apply(that);
@@ -221,8 +219,12 @@ define([
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
+                console.log("here");
+
                 // 验证消息发送者是否为当前对话框
                 var chat_line = $(".chat_line[cid=" + cid + "]");
+
+                console.log(chat_line.length);
 
                 if (chat_line.length === 0) { // 没找到此发送者记录，需要添加
 
@@ -234,6 +236,8 @@ define([
                             cid: cid
                         },
                         success: function(chat) {
+
+                            console.dir(chat);
 
                             if (chat === "err") {
                                 console.log("err");

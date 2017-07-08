@@ -11,8 +11,6 @@
     }
 */
 
-var GLOBAL_SOCKET_URL = "http://localhost:4545";
-
 define([
     "lib/socket.io.min",
     "lib/functions"
@@ -63,12 +61,12 @@ define([
 
             // 客户
             if (Base_meta.kind == 1)
-                that.send_message.apply(that, [1, "已为您接入客服，请问您有什么问题？"]);
-                // that.send_message.apply(that, [1, "您好!欢迎来到中企服！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。"]);
+                that.send_message.apply(that, [1, Base_meta.welcome_message]);
+            // that.send_message.apply(that, [1, "您好!欢迎来到中企服！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。"]);
 
 
             // that.socket = $io.connect("http://117.79.92.82:4545");
-            that.socket = $io.connect(GLOBAL_SOCKET_URL);
+            that.socket = $io.connect(Base_meta.GLOBAL_SOCKET_URL);
         },
 
         // 接收socket连接成功推送
@@ -180,6 +178,7 @@ define([
         // 向服务器端socket灌注属性
         send_join_room: function(changeData) {
             var that = this;
+            // console.log(changeData);
             that.socket.emit("join_room", changeData);
         },
 

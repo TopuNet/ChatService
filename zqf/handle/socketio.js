@@ -79,8 +79,6 @@ var socketio = function() {
             var that = this;
             socket.on("join_room", function(data) {
 
-                // console.log("\n\nsocketio", 82, "join_room_data:\n", data);
-
                 // console.log("\n\nsocket", 57, "data:\n", data);
                 // console.log("\n\nsocket", 58, "config.socket_global_2:\n", config.socket_global_2);
                 // console.log("\n\nsocket", 59, "data.kind:\n", data.kind);
@@ -122,9 +120,9 @@ var socketio = function() {
 
                             if (data.cid.toString() !== "0") {
                                 socket.join("room_" + data.cid + "_" + data.sid);
-                                // console.log("\n\nsocketio", 123, "rooms:", Object.keys(that.io.sockets.adapter.rooms));
                                 callback(null);
 
+                                // console.log("\n\nsocketio", 123, "rooms:", Object.keys(that.io.sockets.adapter.rooms));
                             } else {
 
                                 // 查询sid对应的所有chats，遍历chats，join不同room
@@ -248,7 +246,7 @@ var socketio = function() {
                 // 发送广播
                 var send_broadcast = function(callback) {
 
-                    // console.log("\n\nsocketio", 249, "socket.rooms:\n", socket.rooms);
+                    // console.log("\n\nsocketio", 216, "socket.rooms:\n", socket.rooms);
 
                     // 客户上线状态
                     socket.to("room_" + cid + "_" + sid).emit("send_message", sender == "o" ? 1 : 3, msg, cid, sid, rdate);

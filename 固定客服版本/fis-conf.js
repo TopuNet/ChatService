@@ -1,7 +1,7 @@
 // default settings. fis3 release
 // fis.set('project.charset', 'utf8');
 // fis.set('project.fileType.text', 'htm');
-fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**']);
+fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js']);
 
 // Global start
 fis.match('/css/**.css', {
@@ -37,18 +37,18 @@ fis.match('/images/**.png', {
 // Global end
 
 // Publish start
-fis.media('pub').match('/inc/**',{
+fis.media('pub').match('/inc/**', {
     url: '$0',
-    domain: 'http://static.topu.net/f'
+    domain: 'http://xcchat.topu.net'
 });
 
 fis.media('pub').match('{/css/**,/images/**,/widget/**}', {
     url: '$0',
-    domain: 'http://static.topu.net/f/static'
+    domain: 'http://xcchat.topu.net/static'
 });
 
 fis.media('pub').match('/widget/**.js', {
-    optimizer: fis.plugin('uglify-js')
+    // optimizer: fis.plugin('uglify-js')
 });
 
 fis.media('pub').match('/css/**.css', {
