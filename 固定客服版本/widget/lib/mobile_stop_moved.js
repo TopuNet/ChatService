@@ -91,6 +91,9 @@ var mobile_stop_moved = {
                         // console.log("false");
                         $(opt.selector).css("height", window_size_px.width + "px");
                     }
+                    // $(opt.selector).css({
+                    //     border: "solid 2px #ff0000"
+                    // });
                     resize_n = 0;
                 }, 0);
 

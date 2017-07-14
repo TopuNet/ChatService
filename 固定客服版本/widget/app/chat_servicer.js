@@ -325,11 +325,11 @@ define([
             // 如果上一条消息的时间不为空，并且不是系统消息，则需要判断时间间隔来决定是否推送一条时间消息
             if (kind != 1) {
 
-                console.log(!that.lastTime, date.getTime(), that.lastTime, date.getTime() - that.lastTime, 60 * 1000);
+                // console.log(!that.lastTime, date.getTime(), that.lastTime, date.getTime() - that.lastTime, 60 * 1000);
 
                 // 时间差大于1分钟
                 if (!that.lastTime || date.getTime() - that.lastTime >= 60 * 1000) {
-                    console.log(date);
+                    // console.log(date);
                     that.send_message.apply(that, [1, $func.dateFormat_wx(date)]);
                 }
 

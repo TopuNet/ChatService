@@ -7,7 +7,8 @@
         socket,
         loadingToast,
         iosDialog2,
-        lastTime // 最后一条消息的时间的毫秒数(long)
+        lastTime, // 最后一条消息的时间的毫秒数(long)
+        title_height_px // 微信标题栏高度
     }
 */
 
@@ -21,85 +22,16 @@ define([
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
+            that.title_height_px = window.screen.height - window.innerHeight;
 
             // that.send_message.apply(that, [1, "window_screen_height:" + window.screen.height]);
             // that.send_message.apply(that, [1, "window_innerHeight:" + window.innerHeight]);
 
-            // 微信标题栏高度
-            var title_height_px = window.screen.height - window.innerHeight;
-
-            // 安卓orIOS
-            var device;
-            if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-                device = "ios";
-            } else {
-                device = "android";
-            }
-
-            $("input").on("focus", function() {
-
-                var _this = $(this);
-
-                var stoped_wrapper = $(".stoped_wrapper");
-                var stoped_wrapper_height_px = $(".stoped_wrapper").height();
-
-                $(this).unbind("blur").on("blur", function() {
-
-                    setTimeout(function() {
-
-                        var footer_button = $(".footer_button");
-                        footer_button.removeAttr("style").css({
-                            display: "block",
-                            position: "fixed",
-                            bottom: 0
-                        });
-                    }, 0);
-
-                    setTimeout(function() {
-
-                        stoped_wrapper.css({
-                            height: stoped_wrapper_height_px + "px"
-                        });
-                    }, 500);
-                });
-
-                setTimeout(function() {
-
-                    // 弹出键盘后的窗口高度-微信标题栏高度
-                    var new_height_px = $(window)[0].innerHeight - title_height_px;
-
-                    // 底部菜单盒对象
-                    var footer_button = $(".footer_button");
-
-                    stoped_wrapper.css({
-                        height: new_height_px + "px"
-                    });
-
-                    if (device == "ios") {
-
-                        $("body").scrollTop(0);
-
-                        footer_button.css({
-                            position: "absolute",
-                            height: "100vh",
-                            top: (new_height_px - footer_button.height()) + "px"
-                        });
-                    } else {
-
-                        footer_button.css({
-                            position: "absolute",
-                            bottom: 0
-                        });
-                    }
-
-                    // 滚动内容区域到底部
-                    stoped_wrapper.scrollTop(stoped_wrapper[0].scrollHeight - stoped_wrapper.height());
-                    
-                }, 500);
-            });
-
             // 处理服务器端渲染err
             that.deal_err.apply(that);
+
+            // 解决ios端fixed居底input被键盘遮挡的问题
+            that.fix_ios_fixed_bottom_input.apply(that);
 
             // 默认滚动到最底
             that.rollToBottom.apply(that);
@@ -112,6 +44,108 @@ define([
 
             // 监听表单提交
             that.form_send_submit_Listener.apply(that);
+        },
+
+        // 解决ios端fixed居底input被键盘遮挡的问题
+        fix_ios_fixed_bottom_input: function() {
+
+            var that = this;
+
+            var stoped_wrapper = $(".stoped_wrapper"),
+                stoped_wrapper_height_px,
+                footer_button = $(".footer_button"), // 底部菜单盒对象
+                footer_input = footer_button.find("input[type=text]");
+
+            // focus处理
+            var input_focus_handler = function() {
+
+                setTimeout(function() {
+
+                    // console.log($(window)[0].innerHeight + that.title_height_px, $(window)[0].screen.height);
+
+                    // 解决ios弹出键盘的状态下，切换应用再切换回来执行了一次focus（其实键盘没有弹出来）的问题
+                    if (window.innerHeight + that.title_height_px == window.screen.height) {
+                        footer_input.blur();
+                        return;
+                    }
+
+                    // 弹出键盘后的窗口高度-微信标题栏高度
+                    var new_height_px = $(window)[0].innerHeight - that.title_height_px;
+
+                    // 调整stoped_wrapper的高度
+                    stoped_wrapper.css({
+                        height: new_height_px + "px"
+                    });
+
+                    // 安卓orIOS
+                    var device;
+                    if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+                        device = "ios";
+                    } else {
+                        device = "android";
+                    }
+
+                    if (device == "ios") {
+
+                        // 调整窗口的滚动高度，让stoped_wrapper回到居顶的状态
+                        $("body").scrollTop(0);
+
+                        // 调整居底input外盒变为absolute，根据top定位
+                        footer_button.css({
+                            position: "absolute",
+                            height: "100vh",
+                            top: (new_height_px - footer_button.height()) + "px"
+                        });
+                    } else {
+
+                        // 调整居底input外盒变为absolute，根据bottom定位
+                        footer_button.css({
+                            position: "absolute",
+                            bottom: 0
+                        });
+                    }
+
+                    // 滚动内容区域到底部
+                    stoped_wrapper.scrollTop(stoped_wrapper[0].scrollHeight - stoped_wrapper.height());
+
+                }, 500);
+            }
+
+            // blur处理
+            var input_blur_handler = function() {
+
+                // console.log("in blur_handler");
+
+                // 不加setTimeout的话，点击“发送按钮”，会先执行blur，不再执行提交。
+                setTimeout(function() {
+
+                    var footer_button = $(".footer_button");
+
+                    footer_button.removeAttr("style").css({
+                        display: "block",
+                        position: "fixed",
+                        bottom: 0
+                    });
+
+                    stoped_wrapper.css({
+                        height: stoped_wrapper_height_px + "px"
+                    });
+
+                    setTimeout(function() {}, 500);
+                }, 0);
+            };
+
+            setTimeout(function() {
+                stoped_wrapper_height_px = stoped_wrapper.height();
+
+                footer_input.on("focus", function() {
+                    input_focus_handler();
+
+                    $(this).unbind("blur").on("blur", function() {
+                        input_blur_handler();
+                    });
+                });
+            }, 500);
         },
 
         // 默认滚动到最底
@@ -318,11 +352,6 @@ define([
                     that.send_message.apply(that, [2, text, Base_meta.cid, Base_meta.sid]);
                     input.val("");
                 }
-            });
-
-            $("input.button_modify_nickname").unbind().on("touchstart mousedown", function(e) {
-                e.preventDefault();
-                that.prompt_name.apply(that);
             });
         }
     };

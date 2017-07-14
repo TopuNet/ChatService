@@ -171,7 +171,8 @@ router.get("/", mw_check_login_status, function(req, res) {
                 servicer: login_servicer,
                 chats: chats,
                 GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
-                servicer_pc_title: chat_config.servicer_pc_title
+                servicer_pc_title: chat_config.servicer_pc_title,
+                comm_talk_list_template: []
             });
             // console.log("\n\nservicer", 214, "chats:\n", chats);
         }
