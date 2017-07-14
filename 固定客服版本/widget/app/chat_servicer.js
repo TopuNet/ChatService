@@ -92,6 +92,7 @@ define([
                                     default:
                                         break;
                                 }
+                                // console.log(r.rdate);
                                 that.send_message.apply(that, [sender_kind, r.content, r.cid, Base_meta.sid, r.rdate, false]);
 
                             });
@@ -219,12 +220,12 @@ define([
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
-                console.log("here");
+                // console.log("here");
 
                 // 验证消息发送者是否为当前对话框
                 var chat_line = $(".chat_line[cid=" + cid + "]");
 
-                console.log(chat_line.length);
+                // console.log(chat_line.length);
 
                 if (chat_line.length === 0) { // 没找到此发送者记录，需要添加
 
@@ -237,7 +238,7 @@ define([
                         },
                         success: function(chat) {
 
-                            console.dir(chat);
+                            // console.dir(chat);
 
                             if (chat === "err") {
                                 console.log("err");
@@ -245,14 +246,14 @@ define([
                             }
 
                             // 添加左侧消息者记录
-                            // var last_time=new Date(chat.last_timestamp)
+                            var last_time = new Date(chat.last_timestamp);
                             var chat_template = $(".chat_line.template").clone()
                                 .removeClass("template")
                                 .addClass("new")
                                 .attr("cid", chat.cid);
                             chat_template.find("img").attr("src", chat.client.headimg);
                             chat_template.find(".nickname").text(chat.client.nickname);
-                            chat_template.find(".last_time").text($func.dateFormat_wx(new Date(chat.last_timestamp).toLocaleString()));
+                            chat_template.find(".last_time").text($func.dateFormat_wx(last_time).toLocaleString());
                             chat_template.find(".last_content").text(chat.last_content);
                             chat_template.prependTo(".chat_list");
 
@@ -289,7 +290,7 @@ define([
             // console.log(kind, msg, cid, sid, date);
 
             date = date || new Date();
-            date = new Date(date);
+            date = new Date(date.toString().replace(/-/ig, "/"));
 
             if (sendto_socketio === undefined)
                 sendto_socketio = true;
@@ -324,9 +325,11 @@ define([
             // 如果上一条消息的时间不为空，并且不是系统消息，则需要判断时间间隔来决定是否推送一条时间消息
             if (kind != 1) {
 
+                console.log(!that.lastTime, date.getTime(), that.lastTime, date.getTime() - that.lastTime, 60 * 1000);
+
                 // 时间差大于1分钟
                 if (!that.lastTime || date.getTime() - that.lastTime >= 60 * 1000) {
-                    // console.log(typeof date);
+                    console.log(date);
                     that.send_message.apply(that, [1, $func.dateFormat_wx(date)]);
                 }
 

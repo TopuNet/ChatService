@@ -10,8 +10,16 @@ define(function() {
 
             var that = this;
 
+            // 用户名获得焦点
+            that.form_reset.apply(that);
+
             // 监听表单提交
             that.form_submit_Listener.apply(that);
+        },
+        // 清空用户名密码，并让用户名获得焦点
+        form_reset: function() {
+            $(".username").val("").focus();
+            $(".passwd").val("");
         },
         // 监听表单提交
         form_submit_Listener: function() {
@@ -48,6 +56,8 @@ define(function() {
         // 表单提交
         form_submit_deal: function(form_data) {
 
+            var that = this;
+
             var loadingToast = $(".loadingToast");
             var iosDialog2 = $("#iosDialog2");
 
@@ -61,13 +71,14 @@ define(function() {
                 },
                 success: function(result) {
                     // loadingToast.css("display", "none");
-                    console.log(result);
+                    // console.log(result);
                     if (result == "success") {
                         location.href = "/" + Base_meta.from;
                     } else {
                         iosDialog2.find(".weui-dialog__bd").text("用户名或密码错误");
                         iosDialog2.find(".weui-dialog__btn_primary").unbind().on("click", function() {
                             iosDialog2.css("display", "none");
+                            that.form_reset.apply(that);
                         });
                         iosDialog2.css("display", "block");
                         loadingToast.css("display", "none");

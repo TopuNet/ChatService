@@ -7,114 +7,6 @@ body.Chat {
         overflow: hidden;
         text-align: center;
         padding-bottom: 1vh;
-        // 行
-        /*li {
-            margin-top: 2vh;
-            clear: both;
-            // 模板
-            &.template {
-                display: none!important;
-            }
-            // 系统消息行————居中
-            &.center {
-                display: block;
-                overflow: hidden;
-                text-align: center;
-                margin-top: 4vh;
-                div.wrapper {
-                    display: inline-block;
-                    padding: 1vw 3vw;
-                    background: #cecece;
-                    .border-radius(1.5vw);
-                    p {
-                        color: #fff;
-                        text-align: center;
-                        font-size: 2vw!important;
-                    }
-                }
-                // 系统消息后的首个消息行增高行距
-                &+li.message {
-                    margin-top: 4vh;
-                }
-                // 系统消息后的系统消息行减少行距
-                &+li.center {
-                    margin-top: 1vh;
-                }
-            }
-            // 消息行————居左右
-            &.message {
-                overflow: hidden;
-                // 头像
-                img.head {
-                    width: 6vh;
-                    height: 6vh;
-                }
-                div.message_content {
-                    text-align: left;
-                    // 姓名
-                    span.name {
-                        color: #848484;
-                        text-align: left;
-                        margin-left: 1vw;
-                    }
-                    // 文字内容
-                    p {
-                        position: relative;
-                        border: solid 1px #dbdbdb;
-                        .border-radius(1.5vw);
-                        background: #fff;
-                        padding: 1.35vh 3vw;
-                        max-width: 65vw;
-                        word-break: break-word;
-                        line-height: 3vh;
-                        min-height: 6vh;
-                        text-align: left;
-                        span.arrow {
-                            position: absolute;
-                            width: 1.385vw;
-                            height: 2.5vw;
-                            top: 2vh;
-                        }
-                    }
-                }
-                // 左侧消息的特殊样式
-                &.left {
-                    img.head {
-                        float: left;
-                        margin-left: 2vw;
-                    }
-                    div.message_content {
-                        float: left;
-                        margin-left: 3vw;
-                        span.arrow {
-                            left: -1.385vw;
-                            background: url("/inc/chat_arrow_left.png") no-repeat;
-                            background-size: cover;
-                        }
-                    }
-                }
-                // 右侧消息的特殊样式
-                &.right {
-                    img.head {
-                        float: right;
-                        margin-right: 2vw;
-                    }
-                    div.message_content {
-                        float: right;
-                        margin-right: 3vw;
-                        p {
-                            background: @bg_green;
-                            // color: #1477fa;
-                            span.arrow {
-                                right: -1.385vw;
-                                background: url("/inc/chat_arrow_right.png") no-repeat;
-                                background-size: cover;
-                            }
-                        }
-                    }
-                }
-            }
-        }*/
     }
     // 占位行
     div.fixed_space {
@@ -131,10 +23,10 @@ body.Chat {
         background: #f1f1f1;
         border-top: solid 1px #e4e4e4;
         // 文字框
-        input.message_content {
+        .message_content {
             float: left;
             width: 75vw;
-            height: 5vh;
+            line-height: 2.3;
             margin: 1vh 0 0 2vw;
             padding: 0 1vw;
             border: solid 1px #ddd;

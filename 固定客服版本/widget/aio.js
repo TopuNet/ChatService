@@ -27,7 +27,11 @@ var mobile_stop_moved = {
         if (opt.scroll) {
 
             var obj = $(opt.selector);
-            obj.css("overflow", "scroll").css("-webkit-overflow-scrolling", "touch").css("overflow-scrolling", "touch");
+            obj.css("overflow", "scroll").css({
+                "-webkit-overflow-scrolling": "touch",
+                "overflow-scrolling": "touch",
+                "overflow-x": "hidden"
+            });
             var clientY_start;
 
             $(window).on("touchstart", function(e) {
@@ -651,6 +655,87 @@ define('app/chat',[
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
 
+            // that.send_message.apply(that, [1, "window_screen_height:" + window.screen.height]);
+            // that.send_message.apply(that, [1, "window_innerHeight:" + window.innerHeight]);
+
+            // 微信标题栏高度
+            var title_height_px = window.screen.height - window.innerHeight;
+
+            // 安卓orIOS
+            var device;
+            if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+                device = "ios";
+            } else {
+                device = "android";
+            }
+
+            $("input").on("focus", function() {
+
+                // $("body").scrollTop(0);
+
+                var stoped_wrapper_height_px = $(".stoped_wrapper").height();
+
+                $(this).unbind("blur").on("blur", function() {
+
+                    setTimeout(function() {
+
+                        var footer_button = $(".footer_button");
+                        footer_button.removeAttr("style").css({
+                            display: "block",
+                            position: "fixed",
+                            bottom: 0
+                        });
+                    }, 0);
+
+                    setTimeout(function() {
+
+                        $(".stoped_wrapper").css({
+                            height: stoped_wrapper_height_px + "px"
+                        });
+                    }, 500);
+                });
+
+                setTimeout(function() {
+
+                    // $(".stoped_wrapper").height($(window)[0].innerHeight);
+
+                    // 弹出键盘后的窗口高度-微信标题栏高度
+                    var new_height_px = $(window)[0].innerHeight - title_height_px;
+
+                    // 底部菜单盒对象
+                    var footer_button = $(".footer_button");
+
+
+
+                    // that.send_message.apply(that, [1, "innerHeight:" + $(window)[0].innerHeight]);
+                    // that.send_message.apply(that, [1, "height:" + window.screen.height]);
+                    // that.send_message.apply(that, [1, "_height:" + (new_height_px - footer_button.height())]);
+
+                    if (device == "ios") {
+
+                        $("body").scrollTop(0);
+
+                        $(".stoped_wrapper").css({
+                            height: new_height_px + "px"
+                        });
+
+                        footer_button.css({
+                            position: "absolute",
+                            height: "100vh",
+                            top: (new_height_px - footer_button.height()) + "px"
+                        });
+                    } else {
+
+                        footer_button.css({
+                            position: "absolute",
+                            bottom: 0
+                        });
+                    }
+
+
+                }, 500);
+            });
+
             // 处理服务器端渲染err
             that.deal_err.apply(that);
 
@@ -663,6 +748,8 @@ define('app/chat',[
             // 监听表单提交
             that.form_send_submit_Listener.apply(that);
         },
+
+        // 结局底部
 
         // 处理服务器端渲染err，无err则执行socket_connect⬇️
         deal_err: function() {
@@ -807,6 +894,7 @@ define('app/chat',[
         // 向服务器端socket灌注属性
         send_join_room: function(changeData) {
             var that = this;
+            // console.log(changeData);
             that.socket.emit("join_room", changeData);
         },
 
@@ -966,8 +1054,16 @@ define('app/chat_mp_login',[],function() {
 
             var that = this;
 
+            // 用户名获得焦点
+            that.form_reset.apply(that);
+
             // 监听表单提交
             that.form_submit_Listener.apply(that);
+        },
+        // 清空用户名密码，并让用户名获得焦点
+        form_reset: function() {
+            $(".username").val("").focus();
+            $(".passwd").val("");
         },
         // 监听表单提交
         form_submit_Listener: function() {
@@ -1004,6 +1100,8 @@ define('app/chat_mp_login',[],function() {
         // 表单提交
         form_submit_deal: function(form_data) {
 
+            var that = this;
+
             var loadingToast = $(".loadingToast");
             var iosDialog2 = $("#iosDialog2");
 
@@ -1017,13 +1115,14 @@ define('app/chat_mp_login',[],function() {
                 },
                 success: function(result) {
                     // loadingToast.css("display", "none");
-                    console.log(result);
+                    // console.log(result);
                     if (result == "success") {
                         location.href = "/" + Base_meta.from;
                     } else {
                         iosDialog2.find(".weui-dialog__bd").text("用户名或密码错误");
                         iosDialog2.find(".weui-dialog__btn_primary").unbind().on("click", function() {
                             iosDialog2.css("display", "none");
+                            that.form_reset.apply(that);
                         });
                         iosDialog2.css("display", "block");
                         loadingToast.css("display", "none");
@@ -2294,6 +2393,7 @@ define('app/chat_servicer',[
                                     default:
                                         break;
                                 }
+                                // console.log(r.rdate);
                                 that.send_message.apply(that, [sender_kind, r.content, r.cid, Base_meta.sid, r.rdate, false]);
 
                             });
@@ -2421,12 +2521,12 @@ define('app/chat_servicer',[
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
-                console.log("here");
+                // console.log("here");
 
                 // 验证消息发送者是否为当前对话框
                 var chat_line = $(".chat_line[cid=" + cid + "]");
 
-                console.log(chat_line.length);
+                // console.log(chat_line.length);
 
                 if (chat_line.length === 0) { // 没找到此发送者记录，需要添加
 
@@ -2439,7 +2539,7 @@ define('app/chat_servicer',[
                         },
                         success: function(chat) {
 
-                            console.dir(chat);
+                            // console.dir(chat);
 
                             if (chat === "err") {
                                 console.log("err");
@@ -2447,14 +2547,14 @@ define('app/chat_servicer',[
                             }
 
                             // 添加左侧消息者记录
-                            // var last_time=new Date(chat.last_timestamp)
+                            var last_time = new Date(chat.last_timestamp);
                             var chat_template = $(".chat_line.template").clone()
                                 .removeClass("template")
                                 .addClass("new")
                                 .attr("cid", chat.cid);
                             chat_template.find("img").attr("src", chat.client.headimg);
                             chat_template.find(".nickname").text(chat.client.nickname);
-                            chat_template.find(".last_time").text($func.dateFormat_wx(new Date(chat.last_timestamp).toLocaleString()));
+                            chat_template.find(".last_time").text($func.dateFormat_wx(last_time).toLocaleString());
                             chat_template.find(".last_content").text(chat.last_content);
                             chat_template.prependTo(".chat_list");
 
@@ -2491,7 +2591,7 @@ define('app/chat_servicer',[
             // console.log(kind, msg, cid, sid, date);
 
             date = date || new Date();
-            date = new Date(date);
+            date = new Date(date.toString().replace(/-/ig, "/"));
 
             if (sendto_socketio === undefined)
                 sendto_socketio = true;
@@ -2526,9 +2626,11 @@ define('app/chat_servicer',[
             // 如果上一条消息的时间不为空，并且不是系统消息，则需要判断时间间隔来决定是否推送一条时间消息
             if (kind != 1) {
 
+                console.log(!that.lastTime, date.getTime(), that.lastTime, date.getTime() - that.lastTime, 60 * 1000);
+
                 // 时间差大于1分钟
                 if (!that.lastTime || date.getTime() - that.lastTime >= 60 * 1000) {
-                    // console.log(typeof date);
+                    console.log(date);
                     that.send_message.apply(that, [1, $func.dateFormat_wx(date)]);
                 }
 

@@ -24,7 +24,11 @@ var mobile_stop_moved = {
         if (opt.scroll) {
 
             var obj = $(opt.selector);
-            obj.css("overflow", "scroll").css("-webkit-overflow-scrolling", "touch").css("overflow-scrolling", "touch");
+            obj.css("overflow", "scroll").css({
+                "-webkit-overflow-scrolling": "touch",
+                "overflow-scrolling": "touch",
+                "overflow-x": "hidden"
+            });
             var clientY_start;
 
             $(window).on("touchstart", function(e) {

@@ -22,6 +22,87 @@ define([
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
 
+            // that.send_message.apply(that, [1, "window_screen_height:" + window.screen.height]);
+            // that.send_message.apply(that, [1, "window_innerHeight:" + window.innerHeight]);
+
+            // 微信标题栏高度
+            var title_height_px = window.screen.height - window.innerHeight;
+
+            // 安卓orIOS
+            var device;
+            if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+                device = "ios";
+            } else {
+                device = "android";
+            }
+
+            $("input").on("focus", function() {
+
+                // $("body").scrollTop(0);
+
+                var stoped_wrapper_height_px = $(".stoped_wrapper").height();
+
+                $(this).unbind("blur").on("blur", function() {
+
+                    setTimeout(function() {
+
+                        var footer_button = $(".footer_button");
+                        footer_button.removeAttr("style").css({
+                            display: "block",
+                            position: "fixed",
+                            bottom: 0
+                        });
+                    }, 0);
+
+                    setTimeout(function() {
+
+                        $(".stoped_wrapper").css({
+                            height: stoped_wrapper_height_px + "px"
+                        });
+                    }, 500);
+                });
+
+                setTimeout(function() {
+
+                    // $(".stoped_wrapper").height($(window)[0].innerHeight);
+
+                    // 弹出键盘后的窗口高度-微信标题栏高度
+                    var new_height_px = $(window)[0].innerHeight - title_height_px;
+
+                    // 底部菜单盒对象
+                    var footer_button = $(".footer_button");
+
+
+
+                    // that.send_message.apply(that, [1, "innerHeight:" + $(window)[0].innerHeight]);
+                    // that.send_message.apply(that, [1, "height:" + window.screen.height]);
+                    // that.send_message.apply(that, [1, "_height:" + (new_height_px - footer_button.height())]);
+
+                    if (device == "ios") {
+
+                        $("body").scrollTop(0);
+
+                        $(".stoped_wrapper").css({
+                            height: new_height_px + "px"
+                        });
+
+                        footer_button.css({
+                            position: "absolute",
+                            height: "100vh",
+                            top: (new_height_px - footer_button.height()) + "px"
+                        });
+                    } else {
+
+                        footer_button.css({
+                            position: "absolute",
+                            bottom: 0
+                        });
+                    }
+
+
+                }, 500);
+            });
+
             // 处理服务器端渲染err
             that.deal_err.apply(that);
 
@@ -34,6 +115,8 @@ define([
             // 监听表单提交
             that.form_send_submit_Listener.apply(that);
         },
+
+        // 结局底部
 
         // 处理服务器端渲染err，无err则执行socket_connect⬇️
         deal_err: function() {
