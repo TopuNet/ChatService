@@ -83,6 +83,7 @@ var mobile_stop_moved = {
                     // console.log(orientation == orientation_old);
                     // console.log(window_size_px.height);
                     // console.log($(opt.selector).length);
+                    // alert(orientation + ":" + orientation_old + ":" + window_size_px.height);
                     if (orientation == orientation_old) {
                         // console.log("true");
                         $(opt.selector).css("height", window_size_px.height + "px");

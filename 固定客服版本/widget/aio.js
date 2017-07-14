@@ -86,6 +86,7 @@ var mobile_stop_moved = {
                     // console.log(orientation == orientation_old);
                     // console.log(window_size_px.height);
                     // console.log($(opt.selector).length);
+                    // alert(orientation + ":" + orientation_old + ":" + window_size_px.height);
                     if (orientation == orientation_old) {
                         // console.log("true");
                         $(opt.selector).css("height", window_size_px.height + "px");
@@ -671,8 +672,9 @@ define('app/chat',[
 
             $("input").on("focus", function() {
 
-                // $("body").scrollTop(0);
+                var _this = $(this);
 
+                var stoped_wrapper = $(".stoped_wrapper");
                 var stoped_wrapper_height_px = $(".stoped_wrapper").height();
 
                 $(this).unbind("blur").on("blur", function() {
@@ -689,7 +691,7 @@ define('app/chat',[
 
                     setTimeout(function() {
 
-                        $(".stoped_wrapper").css({
+                        stoped_wrapper.css({
                             height: stoped_wrapper_height_px + "px"
                         });
                     }, 500);
@@ -697,27 +699,19 @@ define('app/chat',[
 
                 setTimeout(function() {
 
-                    // $(".stoped_wrapper").height($(window)[0].innerHeight);
-
                     // 弹出键盘后的窗口高度-微信标题栏高度
                     var new_height_px = $(window)[0].innerHeight - title_height_px;
 
                     // 底部菜单盒对象
                     var footer_button = $(".footer_button");
 
-
-
-                    // that.send_message.apply(that, [1, "innerHeight:" + $(window)[0].innerHeight]);
-                    // that.send_message.apply(that, [1, "height:" + window.screen.height]);
-                    // that.send_message.apply(that, [1, "_height:" + (new_height_px - footer_button.height())]);
+                    stoped_wrapper.css({
+                        height: new_height_px + "px"
+                    });
 
                     if (device == "ios") {
 
                         $("body").scrollTop(0);
-
-                        $(".stoped_wrapper").css({
-                            height: new_height_px + "px"
-                        });
 
                         footer_button.css({
                             position: "absolute",
@@ -732,12 +726,17 @@ define('app/chat',[
                         });
                     }
 
-
+                    // 滚动内容区域到底部
+                    stoped_wrapper.scrollTop(stoped_wrapper[0].scrollHeight - stoped_wrapper.height());
+                    
                 }, 500);
             });
 
             // 处理服务器端渲染err
             that.deal_err.apply(that);
+
+            // 默认滚动到最底
+            that.rollToBottom.apply(that);
 
             // 监听socket连接成功
             that.socket_connect_success.apply(that);
@@ -749,7 +748,20 @@ define('app/chat',[
             that.form_send_submit_Listener.apply(that);
         },
 
-        // 结局底部
+        // 默认滚动到最底
+        rollToBottom: function() {
+            var that = this;
+
+            // 在/lib/mobile_stop_moved中，setTimeOut 修改.stoped_wrapper的高，所以此处要延时处理
+            setTimeout(function() {
+
+                var stoped_wrapper = $(".stoped_wrapper");
+                var stoped_wrapper_scrollheight_px = stoped_wrapper[0].scrollHeight;
+                var stoped_wrapper_height_px = stoped_wrapper.height();
+
+                stoped_wrapper.scrollTop(stoped_wrapper_scrollheight_px - stoped_wrapper_height_px);
+            }, 500);
+        },
 
         // 处理服务器端渲染err，无err则执行socket_connect⬇️
         deal_err: function() {
@@ -930,6 +942,8 @@ define('app/chat',[
 
             form.unbind().on("submit", function(e) {
                 e.preventDefault();
+
+                $("input").blur();
 
                 var text = input.val();
                 if (text === "") {

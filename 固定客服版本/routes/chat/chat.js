@@ -81,7 +81,7 @@ router.get("/", function(req, res) {
     var sname = "";
 
     // 客服头像
-    var s_headimg = "";
+    // var s_headimg = "";
 
     var db;
 
@@ -292,20 +292,27 @@ router.get("/", function(req, res) {
         var collection_records = db.collection("records");
 
         collection_records.find({
-            cid: chat.cid.toString(),
-            sid: chat.sid.toString()
-        }).sort([
-            ["timestamp", -1],
-            ["_id", -1]
-        ]).toArray(function(err, arr) {
+                cid: chat.cid.toString(),
+                sid: chat.sid.toString()
+            }).sort([
+                ["timestamp", -1],
+                ["_id", -1]
+            ]).limit(10)
+            .toArray(function(err, arr) {
 
-            if (err) {
-                arr = [];
-            }
-            // console.log("\n\nchat", 292, "records:\n", arr);
+                if (err) {
+                    arr = [];
+                } else {
+                    // 把顺序调个个儿
+                    var records = [];
+                    var i = arr.length - 1;
+                    for (; i >= 0; i--) {
+                        records.push(arr[i]);
+                    }
+                }
 
-            callback(null, chat, arr);
-        });
+                callback(null, chat, records);
+            });
     };
 
     // async
@@ -329,12 +336,14 @@ router.get("/", function(req, res) {
             sname: chat ? chat.servicer.nickname : "",
             client_headimg: chat ? chat.client.headimg : "",
             servicer_headimg: chat ? chat.servicer.headimg : "",
-            records: records,
             GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
             welcome_message: chat_config.welcome_message,
-            client_title: chat_config.client_title
+            client_title: chat_config.client_title,
+            comm_talk_list_template: {
+                records: records
+            }
         };
-        // console.log("\n\nchat", 294, "render_para\n", render_para);
+        // console.log("\n\nchat", 340, "records\n", render_para.comm_talk_list_template.records);
         res.render("Chat/index.html", render_para);
 
     });
