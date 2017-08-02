@@ -234,6 +234,45 @@ var images = require("images"); //图片处理模块，MakeThumb和AddWatermark�
 var path = require('path'); //给图片加水印用
 var xml2js = require("xml2js"); //解析xml为json用
 
+
+/*
+    高京
+    2017-07-21
+    【同步】 格式化日期。今天的日期只显示时间。不含秒
+    * timestamp：待格式化时间戳
+*/
+exports.formatTimeStamp = function(timestamp) {
+    var d = new Date(timestamp);
+    if (d.toString() == "Invalid Date")
+        return "";
+    else {
+        d = {
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            date: d.getDate(),
+            hour: d.getHours(),
+            minute: d.getMinutes()
+        };
+
+        // 拼接格式化字符串
+        var str,
+            now = new Date();
+        if (now.getFullYear() == d.year && now.getMonth() + 1 == d.month && now.getDate() == d.date) {
+            str = "";
+            if (d.hour < 10)
+                str += "0";
+            str += d.hour + ":";
+            if (d.minute < 10)
+                str += d.minute;
+            str += d.minute;
+        } else {
+            str = d.year + "/" + d.month + "/" + d.date;
+        }
+
+        return str;
+    }
+};
+
 /*
     高京
     2016-05-06
@@ -273,13 +312,13 @@ exports.xmlToJson = function(xmlString, CallBack_success) {
 exports.Error = function(res, err) {
     err.status = err.status || 404;
     res.status(err.status);
-    if(config.CacheData.Init!==null){
+    if (config.CacheData.Init !== null) {
         res.render('./err/404.html', {
             "common": config.GetCommon(err.status, "", "", 1),
             "err": (err.status) + ": " + err.message.replace(/[\n\r]/g, " ").replace(/\"/g, "\\\""),
-            "Advertise":config.CacheData.Advertise.list,
-            "Init":config.CacheData.Init.list,
-            "Info":config.CacheData.Info.list
+            "Advertise": config.CacheData.Advertise.list,
+            "Init": config.CacheData.Init.list,
+            "Info": config.CacheData.Info.list
         });
     }
 };
@@ -557,7 +596,7 @@ exports.CreateTopuSignatureSync = function(ParamsJsonObj, non_str, stamp) {
         _stamp = stamp;
 
     //密钥
-    _KeySecret = _handle.ReadFileSync(_KeyFilePath).toString();
+    _KeySecret = _handle.ReadFileSync(_KeyFilePath).toString().trim();
 
     //随机数和密钥混插
     _i = 0;
@@ -576,6 +615,8 @@ exports.CreateTopuSignatureSync = function(ParamsJsonObj, non_str, stamp) {
     _sign += "stamp=" + _stamp;
     _sign += "keySecret=" + _KeySecretNew;
 
+    // console.log("\n\nfunc", 579, "_sign:\n", _sign);
+
     //Hash加密
     _sign = _handle.CreateHash(_sign, "sha1").toLowerCase();
 
@@ -589,7 +630,7 @@ exports.CreateTopuSignatureSync = function(ParamsJsonObj, non_str, stamp) {
     // _str += "}";
 
     return {
-        "source": "node",
+        "source": "chat",
         "non_str": _non_str,
         "stamp": _stamp,
         "signature": _sign

@@ -1,28 +1,25 @@
 @import "common.less";
 // 对话窗口页
 body.Chat {
-    background: #ebebeb;
-    // 消息记录
+    background: #ebebeb; // 消息记录
     ul.list {
         overflow: hidden;
         text-align: center;
         padding-bottom: 1vh;
-    }
-    // 占位行
+    } // 占位行
     div.fixed_space {
-        height: 7vh;
-    }
-    // 底部按钮
+        // height: 7vh;
+        height: 12vw;
+    } // 底部按钮
     div.footer_button {
         display: none; // 先隐藏，连接成功后再显示
         position: fixed;
-        width: 100vw;
-        height: 7vh;
+        width: 100vw; // height: 7vh;
+        height: 12vw;
         left: 0;
         bottom: 0;
         background: #f1f1f1;
-        border-top: solid 1px #e4e4e4;
-        // 文字框
+        border-top: solid 1px #e4e4e4; // 文字框
         .message_content {
             float: left;
             width: 75vw;
@@ -31,8 +28,7 @@ body.Chat {
             padding: 0 1vw;
             border: solid 1px #ddd;
             .border-radius(1.2vw);
-        }
-        // 发送按钮
+        } // 发送按钮
         input.weui-btn_primary {
             float: right;
             margin: 1.1vh 2.5vw 0 0;
@@ -47,43 +43,35 @@ body.Chat_tobeConnect {
         margin: 2vh 2vw;
         display: table;
         width: 96vw;
-        border-collapse: collapse;
-        // 行
+        border-collapse: collapse; // 行
         li.line {
             display: table-row;
             width: 100%;
             height: 4vh;
-            line-height: 4vh;
-            // 首行
+            line-height: 4vh; // 首行
             &:nth-child(1) {
                 display: table-header-group;
                 span {
                     font-weight: bold;
                 }
-            }
-            // 列
+            } // 列
             span {
                 display: table-cell;
                 height: 100%;
                 text-align: center;
                 vertical-align: middle;
-                border: solid 1px #ccc;
-                // id
+                border: solid 1px #ccc; // id
                 &:nth-child(1) {
                     width: 15%;
-                }
-                // 姓名
+                } // 姓名
                 &:nth-child(2) {
                     width: 25%;
-                }
-                // 客服
+                } // 客服
                 &:nth-child(3) {
                     width: 25%;
-                }
-                // 操作
+                } // 操作
                 &:nth-child(4) {
-                    width: 35%;
-                    // 按钮
+                    width: 35%; // 按钮
                     input {
                         padding: 0 2vw;
                         margin: 0 0.5vw;
@@ -98,8 +86,7 @@ body.Chat_tobeConnect {
 
 // 管理&客服 登录页
 body.chat_mp_login {
-    background: @bg_gray_dark;
-    // 登录盒
+    background: @bg_gray_dark; // 登录盒
     div.login_wrapper {
         position: absolute;
         top: 50%;
@@ -112,8 +99,7 @@ body.chat_mp_login {
         background: #fff;
         border: solid 1px @bg_gray_dark;
         text-align: center;
-        .border-radius(10px);
-        // logo_icon
+        .border-radius(10px); // logo_icon
         div.logo_icon {
             .inline-block();
             width: 150px;
@@ -121,31 +107,25 @@ body.chat_mp_login {
             margin: 35px 0;
             background: url("/images/login_icon.png") no-repeat;
             background-size: cover;
-        }
-        // 表单
+        } // 表单
         div.form {
-            position: relative;
-            // 行
+            position: relative; // 行
             li {
-                line-height: 35px;
-                // 第二行
+                line-height: 35px; // 第二行
                 &+li {
                     border-top: dashed 1px #999;
                 }
-            }
-            // 登录按钮
+            } // 登录按钮
             input.button {
                 height: 40px;
                 line-height: 40px;
                 margin-top: 15px;
                 text-align: center;
-                cursor: pointer;
-                // 悬停样式
+                cursor: pointer; // 悬停样式
                 &:hover {
                     background: #1a872e;
                 }
-            }
-            // 完成验证前的遮罩层
+            } // 完成验证前的遮罩层
             div.mask_preValid {
                 position: absolute;
                 top: 0;
@@ -170,46 +150,37 @@ body.chat_mp_index .wrapper {
     display: table;
     width: 100%;
     height: 100vh;
-    border-collapse: collapse;
-    // 列
+    border-collapse: collapse; // 列
     div.wrapper_cell {
         display: table-cell;
         border: solid 3px #666;
-        padding: 20px;
-        // 左侧
+        padding: 20px; // 左侧
         &.wrapper_left {
-            width: 40%;
-            // 添加新客服按钮
+            width: 40%; // 添加新客服按钮
             div.add_button {
                 font-size: 14px;
-                cursor: pointer;
-                // 悬停效果
+                cursor: pointer; // 悬停效果
                 &:hover {
                     background: #f5f5f5;
                 }
-            }
-            // 客服列表
+            } // 客服列表
             ul.servicer_list_ul {
-                margin-top: 30px;
-                // 行
-                & >li {
+                margin-top: 30px; // 行
+                &>li {
                     // 列集合
                     ul {
                         display: table;
                         width: 100%;
-                        margin: 10px 0;
-                        // 列
+                        margin: 10px 0; // 列
                         li {
                             display: table-cell;
                             text-align: center;
-                            vertical-align: middle;
-                            // 头像
+                            vertical-align: middle; // 头像
                             img {
                                 width: 40px;
                                 height: 40px;
                                 margin: 0 10px;
-                            }
-                            // 用户名
+                            } // 用户名
                             p {
                                 text-align: center;
                                 margin-top: 0px;
@@ -217,52 +188,42 @@ body.chat_mp_index .wrapper {
                                 height: 20px;
                                 overflow: hidden;
                                 text-overflow: ellipsis;
-                            }
-                            // 非首列
+                            } // 非首列
                             &+li {
-                                padding-top: 15px;
-                                // 按钮
+                                padding-top: 15px; // 按钮
                                 span {
-                                    cursor: pointer;
-                                    // 悬停样式
+                                    cursor: pointer; // 悬停样式
                                     &:hover {
                                         background: #ddd;
                                     }
                                 }
-                            }
-                            // 接收新会话按钮列
+                            } // 接收新会话按钮列
                             &.receiveNew_li {
-                                position: relative;
-                                // 按钮右上角气泡
+                                position: relative; // 按钮右上角气泡
                                 span.bubble {
                                     position: absolute;
                                     right: -3px;
                                     top: 8px;
                                     width: 26px;
-                                    height: 26px;
-                                    // 对勾图标
+                                    height: 26px; // 对勾图标
                                     background: url("/images/bubble_radic.png") no-repeat;
-                                    background-size: cover;
-                                    // 叉子图标
+                                    background-size: cover; // 叉子图标
                                     &.no {
                                         background-image: url("/images/bubble_times.png");
                                     }
                                 }
                             }
                         }
-                    }
-                    // 非首行
+                    } // 非首行
                     &:not(.template)+li {
                         border-top: dashed 1px #797979;
-                    }
-                    // 模板行
+                    } // 模板行
                     &.template {
                         display: none;
                     }
                 }
             }
-        }
-        // 右侧
+        } // 右侧
         &.wrapper_right {
             width: 60%;
         }
@@ -272,60 +233,49 @@ body.chat_mp_index .wrapper {
 // 通用 - 管理 客服 添加/修改 表单部分
 div.mp_servicer_form {
     width: 300px;
-    margin: 20px auto;
-    // 表单行
+    margin: 20px auto; // 表单行
     ul.form_line_ul>li {
         height: 40px;
-        line-height: 40px;
-        // 非首行
+        line-height: 40px; // 非首行
         &+li {
             border-top: dashed 1px #999;
-        }
-        // 头像行
+        } // 头像行
         &.headimg_li {
             height: auto;
             span {
                 vertical-align: top;
             }
-        }
-        // input
+        } // input
         input {
             width: 240px;
-        }
-        // 头像
+        } // 头像
         ul.headimg_ul {
             .inline-block();
             width: 240px;
-            text-align: center;
-            // 单元
+            text-align: center; // 单元
             li {
                 .inline-block();
                 width: 50px;
                 height: 50px;
                 position: relative;
                 margin: 10px 0 0 25px;
-                cursor: pointer;
-                // 首列
+                cursor: pointer; // 首列
                 &.first_cell {
                     margin-left: 0;
-                }
-                // 头像
+                } // 头像
                 img {
                     width: 50px;
                     height: 50px;
-                }
-                // 选中印章
+                } // 选中印章
                 span {
                     position: absolute;
                     width: 26px;
                     height: 26px;
                     right: -5px;
                     bottom: -5px;
-                }
-                // 选中单元
+                } // 选中单元
                 &.selected {
-                    cursor: default;
-                    // 选中印章
+                    cursor: default; // 选中印章
                     span {
                         background: url("/images/bubble_radic.png") no-repeat;
                         background-size: cover;
@@ -333,12 +283,10 @@ div.mp_servicer_form {
                 }
             }
         }
-    }
-    // 提交按钮
+    } // 提交按钮
     input.form_submit_button {
         margin-top: 30px;
-        cursor: pointer;
-        // 悬停效果
+        cursor: pointer; // 悬停效果
         &:hover {
             background: #f5f5f5;
         }
@@ -357,40 +305,33 @@ body.chat_servicer {
         .flex();
         width: 100vw;
         min-width: 600px;
-        border: solid 2px #666;
-        // 列
+        border: solid 2px #666; // 列
         .wrapper_cell {
-            height: 100vh;
-            // 左侧列
+            height: 100vh; // 左侧列
             &.wrapper_left {
                 min-width: 250px;
                 .flex_set(0 0 25vw); // flex-shrink: 0;
                 border-right: solid 1px @gray_light;
                 overflow: hidden;
                 .flex();
-                .flex_column();
-                // 标题
+                .flex_column(); // 标题
                 .cell_title {
                     // flex-shrink: 0;
                     .flex_set(0 0 49px);
                     line-height: 49px;
                     border-bottom: solid 1px @gray_light;
                     text-align: center;
-                }
-                // 会话列表{
+                } // 会话列表{
                 .chat_list {
                     // flex-grow: 1;
                     .flex_set(1);
-                    overflow-y: scroll;
-                    // 会话行
+                    overflow-y: scroll; // 会话行
                     .chat_line {
                         overflow: hidden;
                         position: relative; // 新消息气泡用
                         padding: 15px 10px;
-                        cursor: default;
-                        // padding-top: 15px;
-                        .flex();
-                        // 新消息气泡
+                        cursor: default; // padding-top: 15px;
+                        .flex(); // 新消息气泡
                         .new_flag {
                             background: #ea233b;
                             display: none;
@@ -401,57 +342,46 @@ body.chat_servicer {
                             .border-radius(5px);
                             top: 50%;
                             margin-top: -22px;
-                        }
-                        // 新消息行
+                        } // 新消息行
                         &.new {
                             // 新消息气泡
                             .new_flag {
                                 display: block;
                             }
-                        }
-                        // 当前行
+                        } // 当前行
                         &.now {
                             background: @gray_light_so;
                             background-position: 1px;
-                        }
-                        // 模板
+                        } // 模板
                         &.template {
                             display: none;
                         }
                         &+.chat_line {
                             border-top: dashed 1px @gray_light;
-                        }
-                        // 头像
+                        } // 头像
                         img {
                             // width: 40px;
                             height: 40px;
-                            .border-radius(25px);
-                            // flex-shrink: 0;
+                            .border-radius(25px); // flex-shrink: 0;
                             .flex_set(0 0);
-                        }
-                        // 右侧span组
+                        } // 右侧span组
                         .span_group {
-                            .flex_set(1 1);
-                            // flex-grow: 1;
+                            .flex_set(1 1); // flex-grow: 1;
                             .flex();
                             flex-wrap: wrap;
                             span {
-                                .flex_set(1 0 85px);
-                                // flex-shrink: 0;
+                                .flex_set(1 0 85px); // flex-shrink: 0;
                                 // flex-grow: 1;
                                 font-size: 12px;
-                            }
-                            // 昵称
+                            } // 昵称
                             .nickname {
                                 margin: 2px 0 0 10px;
-                            }
-                            // 时间
+                            } // 时间
                             .last_time {
                                 margin-top: 2px;
                                 text-align: right;
                                 color: @gray_dark;
-                            }
-                            // 内容
+                            } // 内容
                             .last_content {
                                 .flex_set(1 0 170px);
                                 height: 20px;
@@ -464,66 +394,51 @@ body.chat_servicer {
                         }
                     }
                 }
-            }
-            // 右侧列
+            } // 右侧列
             &.wrapper_right {
                 position: relative;
                 border-left: none;
-                .flex_set(1 1);
-                // flex-grow: 1;
-                .flex();
-                // display: flex;
+                .flex_set(1 1); // flex-grow: 1;
+                .flex(); // display: flex;
                 // display: -webkit-flex;
-                .flex_column();
-                // flex-direction: column;
-                background: @gray_light_so;
-                // 标题行
+                .flex_column(); // flex-direction: column;
+                background: @gray_light_so; // 标题行
                 .cell_title {
-                    .flex_set(0 0 50px);
-                    // flex-shrink: 0;
+                    .flex_set(0 0 50px); // flex-shrink: 0;
                     // height: 50px;
                     border-bottom: solid 1px @gray_light;
-                    .flex();
-                    // 昵称 & 退出
+                    .flex(); // 昵称 & 退出
                     span {
                         height: 50px;
                         line-height: 50px;
                         font-size: 16px;
-                    }
-                    // 昵称
+                    } // 昵称
                     .nickname {
-                        .flex_set(1 0 80%);
-                        // width: 80%;
+                        .flex_set(1 0 80%); // width: 80%;
                         padding-left: 20px;
-                    }
-                    // 退出
+                    } // 退出
                     .quit {
-                        .flex_set(0 0 10%);
-                        // flex-shrink: 0;
+                        .flex_set(0 0 10%); // flex-shrink: 0;
                         width: 10%;
                         min-width: 50px;
                         text-align: right;
                         padding-right: 20px;
                         cursor: pointer;
                     }
-                }
-                // 加载中
+                } // 加载中
                 p.loading {
                     display: none;
                     margin-top: 20px;
                     font-size: 12px;
                     color: @gray_dark;
                     text-align: center;
-                }
-                // 消息记录
+                } // 消息记录
                 ul.talk_list {
-                    .flex_set(1 1);
-                    // flex: auto;
+                    .flex_set(1 1); // flex: auto;
                     overflow-x: hidden;
                     overflow-y: scroll;
                     text-align: center;
-                    padding-bottom: 10px;
-                    // 行
+                    padding-bottom: 10px; // 行
                     /*li {
                         margin-top: 10px;
                         clear: both;
@@ -637,31 +552,26 @@ body.chat_servicer {
                             }
                         }
                     }*/
-                }
-                // 占位行
+                } // 占位行
                 .fixed_space {
                     .flex_set(0 0 @textarea_fixed_height_px+@tool_fixed_height_px);
-                }
-                // 消息发送区
+                } // 消息发送区
                 .content_fixed {
                     width: 100%;
                     height: @textarea_fixed_height_px+@tool_fixed_height_px;
                     border-top: solid 1px @gray_light;
                     position: absolute;
-                    bottom: 0;
-                    // 默认隐藏
+                    bottom: 0; // 默认隐藏
                     &.hidden {
                         display: none;
-                    }
-                    // 工具栏 - 发送监听键
+                    } // 工具栏 - 发送监听键
                     .tool_icon.sendKey {
                         float: right;
                         margin-right: 20px;
                         height: @tool_fixed_height_px;
                         line-height: @tool_fixed_height_px;
                         color: @gray_dark;
-                    }
-                    // 文本框
+                    } // 文本框
                     textarea {
                         clear: both;
                         width: 100%;
@@ -682,12 +592,10 @@ body.chat_servicer ul.talk_list {
     // 行
     li {
         margin-top: 10px;
-        clear: both;
-        // 模板
+        clear: both; // 模板
         &.template {
             display: none!important;
-        }
-        // 系统消息行————居中
+        } // 系统消息行————居中
         &.center {
             display: block;
             overflow: hidden;
@@ -695,28 +603,29 @@ body.chat_servicer ul.talk_list {
             margin-top: 10px;
             div.message_content {
                 display: inline-block;
-                padding: 5px 10px;
-                // background: #cecece;
+                padding: 5px 10px; // background: #cecece;
                 .border-radius();
                 p {
                     color: #b2b2b2;
                     text-align: center;
                     font-size: 12px!important;
                 }
-            }
-            // 系统消息后的首个消息行增高行距
+            } // 系统消息后的首个消息行增高行距
             &+li.message {
                 margin-top: 10px;
-            }
-            // 系统消息后的系统消息行减少行距
+            } // 系统消息后的系统消息行减少行距
             &+li.center {
                 margin-top: 10px;
             }
-        }
-        // 消息行————居左右
+        } // 查看更多历史消息
+        &.more_record {
+            display: none;
+            &.show {
+                display: block;
+            }
+        } // 消息行————居左右
         &.message {
-            overflow: hidden;
-            // 头像
+            overflow: hidden; // 头像
             img.head {
                 width: 30px;
                 height: 30px;
@@ -724,16 +633,14 @@ body.chat_servicer ul.talk_list {
             div.message_content {
                 text-align: left;
                 line-height: 1;
-                max-width: 70%;
-                // 姓名
+                max-width: 70%; // 姓名
                 span.name {
                     color: #848484;
                     text-align: left;
                     margin: 0px;
                     font-size: 12px;
                     line-height: 1;
-                }
-                // 文字内容
+                } // 文字内容
                 p {
                     position: relative;
                     border: solid 1px #dbdbdb;
@@ -749,8 +656,7 @@ body.chat_servicer ul.talk_list {
                         height: 8.5px;
                     }
                 }
-            }
-            // 左侧消息的特殊样式
+            } // 左侧消息的特殊样式
             &.left {
                 img.head {
                     float: left;
@@ -769,8 +675,7 @@ body.chat_servicer ul.talk_list {
                         background-size: cover;
                     }
                 }
-            }
-            // 右侧消息的特殊样式
+            } // 右侧消息的特殊样式
             &.right {
                 img.head {
                     float: right;
@@ -780,8 +685,7 @@ body.chat_servicer ul.talk_list {
                     float: right;
                     margin-right: 10px;
                     p {
-                        background: @bg_green;
-                        // color: #1477fa;
+                        background: @bg_green; // color: #1477fa;
                         span.arrow {
                             top: 10px;
                             right: -5px;

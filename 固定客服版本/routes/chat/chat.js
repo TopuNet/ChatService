@@ -7,13 +7,16 @@
 var router = require("express").Router(),
     async = require("async"),
     mongo = require("../../handle/mongodb"),
-    chat_config = require("../../handle/chat_config");
+    chat_config = require("../../handle/chat_config"),
+    func = require("../../handle/functions"),
+    RECORD_COUNT = 10; // 每次读取历史记录的条数
 
 // 生成token
 var create_Token = function() {
 
 };
 
+// 暂时没用
 // 验证客服token，错误跳往登录页，正确返回sid并更新token，重写cookie
 // callback(err,sid)
 var check_Servicer_Token = function(callback) {
@@ -210,15 +213,30 @@ router.get("/", function(req, res) {
                                 });
                             };
 
+                            // 拉取客户信息
+                            var getClientInfo = function(servicer, _callback) {
+                                // _callback(null, servicer, client);
+                                chat_config.getClientInfo(cid, req.query, function(err, _client) {
+                                    var client = {
+                                        nickname: cname + "_" + cid,
+                                        headimg: c_headimg
+                                    };
+                                    if (!err) {
+                                        // console.log("chat",223,"_client.headimg")
+                                        client.nickname = _client.detail.Mname !== "" ? _client.detail.Mname : _client.detail.Nickname;
+                                        client.headimg = _client.detail.Head_img === "" ? c_headimg : _client.detail.Head_img;
+                                    }
+                                    _callback(err, servicer, client);
+                                });
+                            };
+
                             // 添加会话
-                            var add_chat = function(servicer, _callback) {
+                            var add_chat = function(servicer, client, _callback) {
+                                // console.log("\n\nchat", 230, "client:\n", client);
 
                                 chat = {
                                     "cid": cid,
-                                    "client": {
-                                        "nickname": cname + "_" + cid,
-                                        "headimg": c_headimg
-                                    },
+                                    "client": client,
                                     "bid": bid,
                                     "sid": servicer._id,
                                     "servicer": {
@@ -234,6 +252,7 @@ router.get("/", function(req, res) {
                             // 执行async
                             async.waterfall([
                                 appoint_servicer, // 指派客服
+                                getClientInfo, // 拉取客户信息
                                 add_chat // 添加会话
                             ], function(err, chat) {
                                 api_result_callback(err, chat);
@@ -297,14 +316,15 @@ router.get("/", function(req, res) {
             }).sort([
                 ["timestamp", -1],
                 ["_id", -1]
-            ]).limit(10)
+            ]).limit(RECORD_COUNT)
             .toArray(function(err, arr) {
+
+                var records = [];
 
                 if (err) {
                     arr = [];
                 } else {
                     // 把顺序调个个儿
-                    var records = [];
                     var i = arr.length - 1;
                     for (; i >= 0; i--) {
                         records.push(arr[i]);
@@ -348,6 +368,101 @@ router.get("/", function(req, res) {
 
     });
 
+});
+
+router.post("/getMoreRecords", function(req, res) {
+
+    var form_data;
+
+    var getParams = function(callback) {
+        var _body = req.body;
+        form_data = {
+            cid: func.filterNoNum(_body.cid),
+            sid: _body.sid,
+            start_count: func.filterNoNum(_body.start_count) // 已读数量。此次读取从start_count+1开始
+        };
+
+        if (form_data.cid === "0" || form_data.sid === "" || form_data.start_rid === "0") {
+            callback("err");
+        }
+
+        callback(null);
+    };
+
+    var getRecords = function(_db, callback) {
+        var collection_records = _db.collection("records");
+        // console.log("\n\nchat.js", 394, "form_data:\n", form_data);
+        collection_records.find({
+                cid: form_data.cid,
+                sid: form_data.sid
+            }).sort([
+                ["timestamp", -1],
+                ["_id", -1]
+            ]).limit(RECORD_COUNT).skip(parseInt(form_data.start_count))
+            .toArray(function(err, result) {
+                _db.close();
+
+                if (!result.length)
+                    callback("no more");
+
+                callback(err, result);
+            });
+
+    };
+
+    // 处理记录——该插时间的时候，插时间
+    var dealRecords = function(result, callback) {
+
+        var news = [];
+
+        var i = 0,
+            len = result.length;
+
+        for (; i < len; i++) {
+            if (
+                i > 0 &&
+                result[i - 1].timestamp - result[i].timestamp >= 60 * 1000
+            ) {
+                news.push({
+                    "_id": func.CreateRandomStr(24, 5),
+                    "cid": form_data.cid,
+                    "sid": form_data.sid,
+                    "content": func.formatTimeStamp(result[i].timestamp),
+                    "kind": 1,
+                    "sender": "o",
+                    "timestamp": result[i].timestamp,
+                    "rdate": result[i].rdate.toLocaleString()
+                })
+            }
+            news.push(result[i]);
+        }
+
+        if (len > 0)
+            news.push({
+                "_id": func.CreateRandomStr(24, 5),
+                "cid": form_data.cid,
+                "sid": form_data.sid,
+                "content": func.formatTimeStamp(result[0].timestamp),
+                "kind": 1,
+                "sender": "o",
+                "timestamp": result[0].timestamp,
+                "rdate": result[0].rdate.toLocaleString()
+            });
+
+        callback(null, news);
+    };
+
+    async.waterfall([
+        getParams,
+        mongo.connect_async,
+        getRecords,
+        dealRecords
+    ], function(err, result) {
+        if (err)
+            res.send("no more");
+        else
+            res.json(result);
+    });
 });
 
 /*

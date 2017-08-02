@@ -1,5 +1,5 @@
 /*
-    1.0.5
+    1.0.10
     高京
     2016-08-29
     JS类库
@@ -19,8 +19,12 @@ var functions = {
             });
         });
     },
-    // 日期格式化_仿微信
-    // _date: 日期
+    /*
+        高京
+        2017-08-02
+        日期格式化_仿微信
+        @_date: 日期
+    */
     dateFormat_wx: function(_date) {
 
         var date = new Date(_date);
@@ -60,6 +64,86 @@ var functions = {
 
         return str;
     },
+    /*
+        高京
+        2017-08-02
+        解决ios端fixed居底input被键盘遮挡的问题
+        @dom_selector: 监听focus和blur的Dom的选择器
+    */
+    fix_ios_fixed_bottom_input: function(dom_selector) {
+
+        // 安卓orIOS
+        // var device;
+        if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
+            // device = "ios";
+        } else {
+            return;
+        }
+
+        // alert("ios");
+
+        var interval,
+            footer_input = $(dom_selector),
+            bfscrolltop = document.body.scrollTop; //获取软键盘唤起前浏览器滚动部分的高度
+
+        footer_input.focus(function() {
+            interval = setInterval(function() { //设置一个计时器，时间设置与软键盘弹出所需时间相近
+                document.body.scrollTop = document.body.scrollHeight; //获取焦点后将浏览器内所有内容高度赋给浏览器滚动部分高度
+                // alert(document.body.scrollTop);
+                // alert(document.body.scrollHeight);
+            }, 100);
+        }).blur(function() { //设定输入框失去焦点时的事件
+            clearInterval(interval); //清除计时器
+            setTimeout(function() {
+                document.body.scrollTop = bfscrolltop; //将软键盘唤起前的浏览器滚动部分高度重新赋给改变后的高度
+            }, 0);
+        });
+    },
+    /*
+        高京
+        2017-06-07
+        乘除法计算，解决小数计算误差
+        * kind：1-乘法（cal1×cal2） 2-除法（cal1÷cal2）
+    */
+    calculate: function(kind, cal1, cal2) {
+        cal1 = cal1 || 1;
+        cal2 = cal2 || 1;
+        var lastDealNum = 0,
+            i,
+            str1 = cal1.toString(),
+            str2 = cal2.toString(),
+            str_lastDealNum = "1";
+
+        // 根据小数点位置，获取需要处理的倍数
+        var get_lastDealNum = function(str) {
+            i = str.indexOf(".");
+            if (i == -1)
+                return 0;
+            else
+                return str.length - i - 1;
+        };
+
+        // 累加str1和str2对应的倍数
+        lastDealNum += get_lastDealNum(str1);
+        lastDealNum += get_lastDealNum(str2);
+
+        // 根据需要处理的倍数，生成最后处理的数
+        for (i = 0; i < lastDealNum; i++) {
+            str_lastDealNum += "0";
+        }
+
+        // 计算
+        switch (kind) {
+            case 1:
+                return parseFloat(str1.replace(".", "")) * parseFloat(str2.replace(".", "")) / parseFloat(str_lastDealNum);
+            case 2:
+                return parseFloat(str1.replace(".", "")) / parseFloat(str2.replace(".", "")) / parseFloat(str_lastDealNum);
+            default:
+                return 0;
+
+        }
+    },
+
     /*
         高京
         2016-09-10
@@ -103,9 +187,11 @@ var functions = {
 
         var set_scrollTop = function() {
             obj.scrollTop(obj.scrollTop() + top_per_px);
-            var stop_toTop_bool = top_per_px <= 0 && obj.scrollTop() <= opt.toTop_px;
-            var stop_toDown_bool = top_per_px >= 0 && obj.scrollTop() >= opt.toTop_px;
+            var stop_toTop_bool = top_per_px <= 0 && (obj.scrollTop() + top_per_px) <= opt.toTop_px;
+            var stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + top_per_px) >= opt.toTop_px;
             if (stop_toTop_bool || stop_toDown_bool) {
+                obj.scrollTop(opt.toTop_px);
+
                 if (opt.callback)
                     opt.callback();
                 return;
@@ -402,7 +488,7 @@ var functions = {
 
 if (typeof define === "function" && define.amd) {
     define(function() {
-        // functions.init();
+        functions.init();
         return functions;
     });
 } else {

@@ -17,6 +17,7 @@ define([
     "lib/functions"
 ], function($io, $func) {
     var chat = {
+        RECORD_COUNT: 10, // 一次读取的记录条数
         init: function() {
             var that = this;
 
@@ -30,8 +31,11 @@ define([
             // 处理服务器端渲染err
             that.deal_err.apply(that);
 
+            // 判断是否需要显示“查看更多历史消息”
+            that.jduge_show_more_records.apply(that);
+
             // 解决ios端fixed居底input被键盘遮挡的问题
-            that.fix_ios_fixed_bottom_input.apply(that);
+            $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
 
             // 默认滚动到最底
             that.rollToBottom.apply(that);
@@ -46,106 +50,77 @@ define([
             that.form_send_submit_Listener.apply(that);
         },
 
-        // 解决ios端fixed居底input被键盘遮挡的问题
-        fix_ios_fixed_bottom_input: function() {
-
+        // 判断是否需要显示“查看更多历史消息”
+        jduge_show_more_records: function() {
             var that = this;
 
-            var stoped_wrapper = $(".stoped_wrapper"),
-                stoped_wrapper_height_px,
-                footer_button = $(".footer_button"), // 底部菜单盒对象
-                footer_input = footer_button.find("input[type=text]");
-
-            // focus处理
-            var input_focus_handler = function() {
-
-                setTimeout(function() {
-
-                    // console.log($(window)[0].innerHeight + that.title_height_px, $(window)[0].screen.height);
-
-                    // 解决ios弹出键盘的状态下，切换应用再切换回来执行了一次focus（其实键盘没有弹出来）的问题
-                    if (window.innerHeight + that.title_height_px == window.screen.height) {
-                        footer_input.blur();
-                        return;
-                    }
-
-                    // 弹出键盘后的窗口高度-微信标题栏高度
-                    var new_height_px = $(window)[0].innerHeight - that.title_height_px;
-
-                    // 调整stoped_wrapper的高度
-                    stoped_wrapper.css({
-                        height: new_height_px + "px"
-                    });
-
-                    // 安卓orIOS
-                    var device;
-                    if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-                        device = "ios";
-                    } else {
-                        device = "android";
-                    }
-
-                    if (device == "ios") {
-
-                        // 调整窗口的滚动高度，让stoped_wrapper回到居顶的状态
-                        $("body").scrollTop(0);
-
-                        // 调整居底input外盒变为absolute，根据top定位
-                        footer_button.css({
-                            position: "absolute",
-                            height: "100vh",
-                            top: (new_height_px - footer_button.height()) + "px"
-                        });
-                    } else {
-
-                        // 调整居底input外盒变为absolute，根据bottom定位
-                        footer_button.css({
-                            position: "absolute",
-                            bottom: 0
-                        });
-                    }
-
-                    // 滚动内容区域到底部
-                    stoped_wrapper.scrollTop(stoped_wrapper[0].scrollHeight - stoped_wrapper.height());
-
-                }, 500);
+            var message_li_count = $(".message:not(.template)").length;
+            if (message_li_count >= that.RECORD_COUNT) {
+                $(".more_record:not(.show)").addClass("show");
+                that.show_more_records_Listener.apply(that);
             }
+        },
 
-            // blur处理
-            var input_blur_handler = function() {
+        // 获取更多历史消息的点击监听
+        show_more_records_Listener: function() {
+            var that = this;
 
-                // console.log("in blur_handler");
+            var button = $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
 
-                // 不加setTimeout的话，点击“发送按钮”，会先执行blur，不再执行提交。
-                setTimeout(function() {
+                // console.log("here");
 
-                    var footer_button = $(".footer_button");
+                $.ajax({
+                    url: "/getMoreRecords",
+                    type: "post",
+                    data: {
+                        cid: Base_meta.cid.toString(),
+                        sid: Base_meta.sid,
+                        start_count: $(".list .message:not(.template)").length
+                    },
+                    beforeSend: function() {
+                        that.loadingToast.find(".weui-toast__content").text("请稍候");
+                        that.loadingToast.css("display", "block");
+                    },
+                    success: function(result) {
+                        that.loadingToast.css("display", "none");
 
-                    footer_button.removeAttr("style").css({
-                        display: "block",
-                        position: "fixed",
-                        bottom: 0
-                    });
+                        var more_record = $("ul.list .more_record");
 
-                    stoped_wrapper.css({
-                        height: stoped_wrapper_height_px + "px"
-                    });
+                        if (result.forEach) {
+                            var c = 0;
+                            result.forEach(function(r) {
 
-                    setTimeout(function() {}, 500);
-                }, 0);
-            };
+                                c++;
 
-            setTimeout(function() {
-                stoped_wrapper_height_px = stoped_wrapper.height();
+                                var kind;
+                                switch (r.sender) {
+                                    case "c":
+                                        kind = 2;
+                                        break;
+                                    case "s":
+                                        kind = 3;
+                                        break;
+                                    default:
+                                        c--;
+                                        kind = 1;
+                                        break;
+                                }
+                                that.send_message(kind, r.content, r.cid, r.sid, true);
+                            });
 
-                footer_input.on("focus", function() {
-                    input_focus_handler();
+                            more_record.prependTo("ul.list");
 
-                    $(this).unbind("blur").on("blur", function() {
-                        input_blur_handler();
-                    });
-                });
-            }, 500);
+                            if (c < that.RECORD_COUNT)
+                                more_record.removeClass("show");
+                        } else {
+
+                            more_record.removeClass("show");
+                        }
+                    }
+                })
+
+            });
         },
 
         // 默认滚动到最底
@@ -238,15 +213,18 @@ define([
 
         // 处理消息推送（包括本页自己发送的消息 和 socketio推送的消息）
         // kind: 1-系统消息 2-我的消息 3-对方消息
-        send_message: function(kind, msg, cid, sid) {
+        // prepend: true/else
+        send_message: function(kind, msg, cid, sid, prepend) {
             var that = this;
+
+            prepend = prepend || false;
 
             var date = new Date();
 
             // console.log(kind, msg, cid, sid, date.toLocaleString());
 
             // 将消息发往服务器
-            if (kind == 2) { // 客户发送的消息
+            if (kind == 2 && prepend !== true) { // 客户发送的消息
                 that.socket.emit("send_message", msg, "c", cid, sid, date);
             }
 
@@ -264,18 +242,16 @@ define([
             }
 
             // 如果上一条消息的时间不为空，并且不是系统消息，则需要判断时间间隔来决定是否推送一条时间消息
-            if (kind != 1) {
+            if (kind != 1 && prepend !== true) {
 
                 // 时间差大于1分钟
                 if (!that.lastTime || date.getTime() - that.lastTime >= 60 * 1000) {
                     that.send_message.apply(that, [1, $func.dateFormat_wx(date)]);
                 }
+                // 更新最后消息时间
+                that.lastTime = date.getTime();
 
             }
-
-            // 更新最后消息时间
-            if (kind != 1)
-                that.lastTime = date.getTime();
 
             // 装载内容
             li.find("p").html("<span class=\"arrow\"></span>" + msg);
@@ -290,16 +266,23 @@ define([
 
             // 装载li
             li.removeClass("template")
-                .appendTo("ul.list");
+            if (prepend === true)
+                li.prependTo("ul.list");
+            else
+                li.appendTo("ul.list");
 
-            // 消息窗口向上滚动
-            var ul = li.parents(".list");
-            var ul_height_px = parseFloat(ul.height()) + parseFloat(ul.css("padding-bottom").replace("px", "")) + parseFloat($(".fixed_space").height());
+            // 消息窗口向上／向下滚动
             var stoped_wrapper = $(".stoped_wrapper");
-            var stoped_wrapper_height_px = stoped_wrapper.height();
-            // console.log(ul_height_px, stoped_wrapper_height_px);
-            if (ul_height_px > stoped_wrapper_height_px) {
-                stoped_wrapper.scrollTop(ul_height_px - stoped_wrapper_height_px);
+            if (prepend === true) {
+                stoped_wrapper.scrollTop(0);
+            } else {
+                var ul = li.parents(".list");
+                var ul_height_px = parseFloat(ul.height()) + parseFloat(ul.css("padding-bottom").replace("px", "")) + parseFloat($(".fixed_space").height());
+                var stoped_wrapper_height_px = stoped_wrapper.height();
+                // console.log(ul_height_px, stoped_wrapper_height_px);
+                if (ul_height_px > stoped_wrapper_height_px) {
+                    stoped_wrapper.scrollTop(ul_height_px - stoped_wrapper_height_px);
+                }
             }
         },
 

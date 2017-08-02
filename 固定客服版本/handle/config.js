@@ -25,9 +25,9 @@ exports.session_secret = "1z4d7r2t5h8m3k6o8a4z5e1g7f5u3a0y"; //session密钥
 // exports.host = "qingfeng.65276588.cn"; //接口调用主机地址(正式环境)
 // exports.port = 80; //端口号
 
-exports.ImageDomain = "http://192.168.1.58:8130"; //数据库中读取的图片的域名前缀 (测试环境)
-exports.host = "192.168.1.58"; //测试环境
-exports.port = 8130; //端口号
+exports.ImageDomain = "http://xcmp.topu.net"; //数据库中读取的图片的域名前缀 (测试环境)
+exports.host = "xcmp.topu.net"; //测试环境
+exports.port = 80; //端口号
 
 
 // 访问接口获得数据方法
@@ -119,6 +119,8 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
         };
 
         func.Request(opt, function(data) {
+
+            console.log("\n\nconfig",123,"opt:\n",opt);
 
             var i = 0,
                 j = 0,

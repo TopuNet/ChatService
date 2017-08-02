@@ -1,7 +1,10 @@
 // default settings. fis3 release
 // fis.set('project.charset', 'utf8');
 // fis.set('project.fileType.text', 'htm');
-fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js']);
+fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js', '/handle/*.js_bak']);
+fis.config.set('settings.optimizer.uglify-js', {
+    mangle: false // 不混淆
+});
 
 // Global start
 fis.match('/css/**.css', {
@@ -16,10 +19,6 @@ fis.match('/css/**.css.map', {
 fis.match('/widget/**', {
     release: false
 });
-
-// fis.match('/widget/main.js', {
-//     release: '/static$0'
-// });
 
 fis.match('/widget/aio.js', {
     release: '/static$0',
@@ -48,7 +47,7 @@ fis.media('pub').match('{/css/**,/images/**,/widget/**}', {
 });
 
 fis.media('pub').match('/widget/**.js', {
-    // optimizer: fis.plugin('uglify-js')
+    optimizer: fis.plugin('uglify-js')
 });
 
 fis.media('pub').match('/css/**.css', {

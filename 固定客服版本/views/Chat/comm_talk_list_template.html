@@ -19,35 +19,59 @@
                 <br />奋斗水电费水电费水电费</p>
         </div>
     </li>
+    <li class="center more_record">
+        <div class="message_content">
+            <p>查看更多历史消息</p>
+        </div>
+    </li>
     <% 
         if(
             comm_talk_list_template&&
             comm_talk_list_template.records&&
             comm_talk_list_template.records.length
         ){
+            var last_timestamp=0;
             comm_talk_list_template.records.forEach(function(r,index){ 
     %>
-        <% if(r.sender=="c"){ %>
-            <li class="message right">
-                <img class="head" src="<%-client_headimg%>" />
+        <% if(r.sender=="o"){ %>
+            <li class="center">
                 <div class="message_content">
-                    <p><span class="arrow"></span>
+                    <p>
                         <%-r.content%>
                     </p>
                 </div>
             </li>
-            <% } else if(r.sender=="s"){ %>
-                <li class="message left">
-                    <img class="head" src="<%-servicer_headimg%>" />
-                    <div class="message_content">
-                        <span class="name"><%-sname%></span>
-                        <p><span class="arrow"></span>
-                            <%-r.content%>
-                        </p>
-                    </div>
-                </li>
-                <% } %>
-                    <%
-            });
-        }
-    %>
+            <% } else { %>
+                <% if(r.timestamp-last_timestamp>=60*1000){ %>
+                    <li class="center">
+                        <div class="message_content">
+                            <p>
+                                <%-formatTimeStamp(r.timestamp)%>
+                            </p>
+                        </div>
+                    </li>
+                    <% } %>
+                        <% last_timestamp=r.timestamp; %>
+                            <% if(r.sender=="c"){ %>
+                                <li class="message right">
+                                    <img class="head" src="<%-client_headimg%>" />
+                                    <div class="message_content">
+                                        <p><span class="arrow"></span>
+                                            <%-r.content%>
+                                        </p>
+                                    </div>
+                                </li>
+                                <% } else if(r.sender=="s"){ %>
+                                    <li class="message left">
+                                        <img class="head" src="<%-servicer_headimg%>" />
+                                        <div class="message_content">
+                                            <span class="name"><%-sname%></span>
+                                            <p><span class="arrow"></span>
+                                                <%-r.content%>
+                                            </p>
+                                        </div>
+                                    </li>
+                                    <% } %>
+                                        <% } %>
+                                            <% }); %>
+                                                <% } %>

@@ -35,35 +35,7 @@ app.engine('.html', ejs.__express);
  * 
  */
 app.locals.formatTimeStamp = function(timestamp) {
-    var d = new Date(timestamp);
-    if (d.toString()=="Invalid Date")
-        return "";
-    else {
-        d = {
-            year: d.getFullYear(),
-            month: d.getMonth() + 1,
-            date: d.getDate(),
-            hour: d.getHours(),
-            minute: d.getMinutes()
-        };
-
-        // 拼接格式化字符串
-        var str,
-            now = new Date();
-        if (now.getFullYear() == d.year && now.getMonth() + 1 == d.month && now.getDate() == d.date) {
-            str = "";
-            if (d.hour < 10)
-                str += "0";
-            str += d.hour + ":";
-            if (d.minute < 10)
-                str += d.minute;
-            str += d.minute;
-        } else {
-            str = d.year + "/" + d.month + "/" + d.date;
-        }
-
-        return str;
-    }
+    return func.formatTimeStamp(timestamp);
 };
 
 /*

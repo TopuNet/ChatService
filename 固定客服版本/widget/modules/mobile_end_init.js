@@ -1,8 +1,8 @@
 /*
-	移动端初始化设置
-	zepto、横屏、mobile_stop_moved
-	高京
-	2017-05-25
+    移动端初始化设置
+    zepto、横屏、mobile_stop_moved
+    高京
+    2017-05-25
 */
 
 define([
@@ -14,7 +14,7 @@ define([
     $mobile_stop_moved,
     $landscape_mask
 ) {
-
+    
     var opt = {
         selector: "div.stoped_wrapper", // 容器盒选择器（resize_toWindow为false时，需要在样式表中将此盒定高），无默认值
         scroll: true, // 盒内可滚动，默认true

@@ -11,7 +11,8 @@ var router = require("express").Router(),
     config = require("../../handle/config.js"),
     login_route = "/servicer/login", // 登录页
     db, // mongodb对象
-    chat_config = require("../../handle/chat_config");
+    chat_config = require("../../handle/chat_config"),
+    RECORD_COUNT = 10;
 
 // 生成token并返回
 // username: 用户名
@@ -339,7 +340,7 @@ router.post("/getRecordsHtmlByCid", mw_check_login_status, function(req, res) {
             }).sort([
                 ["rdate", -1]
             ])
-            .limit(50)
+            .limit(RECORD_COUNT)
             .toArray(function(err, _records) {
 
                 var records = [],

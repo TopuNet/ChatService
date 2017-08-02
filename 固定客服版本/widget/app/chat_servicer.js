@@ -16,6 +16,7 @@ define([
     "lib/functions"
 ], function($io, $func) {
     var chat_servicer = {
+        RECORD_COUNT: 10,
         init: function() {
 
             var that = this;
@@ -59,7 +60,7 @@ define([
                     content_fixed.addClass("hidden");
 
                 // 清空右侧消息列表
-                talk_list.find("li:not(.template)").remove();
+                talk_list.find("li:not(.template,.more_record)").remove();
 
                 // 还原that.lastTime
                 that.lastTime = 0;
@@ -104,8 +105,68 @@ define([
                         // 显示消息输入框
                         if (content_fixed.hasClass("hidden"))
                             content_fixed.removeClass("hidden");
+
+                        // 判断是否需要显示“查看更多历史消息”
+                        var message_li_count = $(".message:not(.template)").length;
+                        if (message_li_count >= that.RECORD_COUNT) {
+                            $(".more_record:not(.show)").addClass("show");
+                            that.show_more_records_Listener.apply(that);
+                        }
                     }
                 });
+
+            });
+        },
+
+        // 获取更多历史消息的点击监听
+        show_more_records_Listener: function() {
+            var that = this;
+
+            var button = $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+
+                // console.log("here");
+
+                $.ajax({
+                    url: "/getMoreRecords",
+                    type: "post",
+                    data: {
+                        cid: Base_meta.cid.toString(),
+                        sid: Base_meta.sid,
+                        start_count: $(".list .message:not(.template)").length
+                    },
+                    beforeSend: function() {
+                        that.loadingToast.find(".weui-toast__content").text("请稍候");
+                        that.loadingToast.css("display", "block");
+                    },
+                    success: function(result) {
+                        that.loadingToast.css("display", "none");
+
+                        if (result.forEach) {
+                            result.forEach(function(r) {
+                                var kind;
+                                switch (r.sender) {
+                                    case "c":
+                                        kind = 2;
+                                        break;
+                                    case "s":
+                                        kind = 3;
+                                        break;
+                                    default:
+                                        kind = 1;
+                                        break;
+                                }
+                                that.send_message(kind, r.content, r.cid, r.sid, true);
+                            });
+
+                            $("ul.list .more_record").prependTo("ul.list");
+                        }
+
+                        if (!result.forEach) {
+                            $("ul.list .more_record").removeClass("show");
+                        }
+                    }
+                })
 
             });
         },
