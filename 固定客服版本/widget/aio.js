@@ -786,7 +786,7 @@ define('app/chat',[
         show_more_records_Listener: function() {
             var that = this;
 
-            var button = $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+            $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
                 e.preventDefault();
 
                 // console.log("here");
@@ -808,8 +808,8 @@ define('app/chat',[
 
                         var more_record = $("ul.list .more_record");
 
+                        var c = 0;
                         if (result.forEach) {
-                            var c = 0;
                             result.forEach(function(r) {
 
                                 c++;
@@ -830,23 +830,21 @@ define('app/chat',[
                                 that.send_message(kind, r.content, r.cid, r.sid, true);
                             });
 
-                            more_record.prependTo("ul.list");
-
-                            if (c < that.RECORD_COUNT)
-                                more_record.removeClass("show");
-                        } else {
-
-                            more_record.removeClass("show");
                         }
+
+                        if (c < that.RECORD_COUNT)
+                            more_record.removeClass("show");
+                        else
+                            more_record.prependTo("ul.list");
                     }
-                })
+                });
 
             });
         },
 
         // 默认滚动到最底
         rollToBottom: function() {
-            var that = this;
+            // var that = this;
 
             // 在/lib/mobile_stop_moved中，setTimeOut 修改.stoped_wrapper的高，所以此处要延时处理
             setTimeout(function() {
@@ -934,7 +932,7 @@ define('app/chat',[
 
         // 处理消息推送（包括本页自己发送的消息 和 socketio推送的消息）
         // kind: 1-系统消息 2-我的消息 3-对方消息
-        // prepend: true/else
+        // prepend: true/else。true时消息加在前面，而且不向服务器推送。读历史消息时，可以为true。
         send_message: function(kind, msg, cid, sid, prepend) {
             var that = this;
 
@@ -986,7 +984,7 @@ define('app/chat',[
             }
 
             // 装载li
-            li.removeClass("template")
+            li.removeClass("template");
             if (prepend === true)
                 li.prependTo("ul.list");
             else
@@ -2481,53 +2479,8 @@ define('app/chat_servicer',[
                 // 显示loading
                 p_loading.css("display", "block");
 
-                // 获取消息记录
-                $.ajax({
-                    url: "/servicer/getRecordsHtmlByCid",
-                    type: "post",
-                    data: {
-                        cid: chat_line.attr("cid")
-                    },
-                    success: function(result) {
-
-                        if (result != "err") {
-                            var sender_kind = 1;
-                            result.forEach(function(r) {
-                                switch (r.sender.toLowerCase()) {
-                                    case "o":
-                                        sender_kind = 1;
-                                        break;
-                                    case "s":
-                                        sender_kind = 2;
-                                        break;
-                                    case "c":
-                                        sender_kind = 3;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                // console.log(r.rdate);
-                                that.send_message.apply(that, [sender_kind, r.content, r.cid, Base_meta.sid, r.rdate, false]);
-
-                            });
-                        }
-
-                        // 隐藏“加载中”
-                        p_loading.css("display", "none");
-
-                        // 显示消息输入框
-                        if (content_fixed.hasClass("hidden"))
-                            content_fixed.removeClass("hidden");
-
-                        // 判断是否需要显示“查看更多历史消息”
-                        var message_li_count = $(".message:not(.template)").length;
-                        if (message_li_count >= that.RECORD_COUNT) {
-                            $(".more_record:not(.show)").addClass("show");
-                            that.show_more_records_Listener.apply(that);
-                        }
-                    }
-                });
-
+                // 执行ajax
+                that.getRecords_ajax.apply(that, [chat_line]);
             });
         },
 
@@ -2535,52 +2488,78 @@ define('app/chat_servicer',[
         show_more_records_Listener: function() {
             var that = this;
 
-            var button = $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+            $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
                 e.preventDefault();
 
-                // console.log("here");
+                that.getRecords_ajax.apply(that, [$(".chat_list .chat_line.now"), "top"]);
 
-                $.ajax({
-                    url: "/getMoreRecords",
-                    type: "post",
-                    data: {
-                        cid: Base_meta.cid.toString(),
-                        sid: Base_meta.sid,
-                        start_count: $(".list .message:not(.template)").length
-                    },
-                    beforeSend: function() {
-                        that.loadingToast.find(".weui-toast__content").text("请稍候");
-                        that.loadingToast.css("display", "block");
-                    },
-                    success: function(result) {
-                        that.loadingToast.css("display", "none");
+            });
+        },
+        // 获取历史消息记录的ajax
+        // @chat_line 左侧点击的li行
+        // @scroll_direction: "top"/"bottom"(默认)，加载完消息后，屏幕移动到最顶还是最尾
+        getRecords_ajax: function(chat_line, scroll_direction) {
+            var that = this;
 
-                        if (result.forEach) {
-                            result.forEach(function(r) {
-                                var kind;
-                                switch (r.sender) {
-                                    case "c":
-                                        kind = 2;
-                                        break;
-                                    case "s":
-                                        kind = 3;
-                                        break;
-                                    default:
-                                        kind = 1;
-                                        break;
-                                }
-                                that.send_message(kind, r.content, r.cid, r.sid, true);
-                            });
+            var content_fixed = $(".content_fixed");
+            var p_loading = $(".wrapper_right p.loading"); // 加载中提示盒
 
-                            $("ul.list .more_record").prependTo("ul.list");
-                        }
+            // 获取消息记录
+            $.ajax({
+                url: "/servicer/getRecords",
+                type: "post",
+                data: {
+                    cid: chat_line.attr("cid"),
+                    start_count: $(".talk_list .message:not(.template)").length
+                },
+                success: function(result) {
 
-                        if (!result.forEach) {
-                            $("ul.list .more_record").removeClass("show");
-                        }
+                    var c = 0;
+
+                    if (result.forEach) {
+                        var sender_kind = 1;
+
+                        result.forEach(function(r) {
+
+                            c++;
+
+                            switch (r.sender.toLowerCase()) {
+                                case "o":
+                                default:
+                                    c--;
+                                    sender_kind = 1;
+                                    break;
+                                case "s":
+                                    sender_kind = 2;
+                                    break;
+                                case "c":
+                                    sender_kind = 3;
+                                    break;
+                            }
+                            // console.log(r.rdate);
+                            that.send_message.apply(that, [sender_kind, r.content, r.cid, Base_meta.sid, r.rdate, true, scroll_direction]);
+
+                        });
                     }
-                })
 
+                    // 隐藏“加载中”
+                    p_loading.css("display", "none");
+
+                    // 显示消息输入框
+                    if (content_fixed.hasClass("hidden"))
+                        content_fixed.removeClass("hidden");
+
+                    // 判断是否需要显示“查看更多历史消息”
+                    var more_record = $("ul.talk_list .more_record");
+                    if (c < that.RECORD_COUNT)
+                        more_record.removeClass("show");
+                    else {
+                        if (!more_record.hasClass("show"))
+                            more_record.addClass("show").css("cursor", "pointer");
+                        more_record.prependTo("ul.talk_list");
+                        that.show_more_records_Listener.apply(that);
+                    }
+                }
             });
         },
         // 退出按钮点击监听
@@ -2755,23 +2734,24 @@ define('app/chat_servicer',[
         },
 
         // 处理消息推送（包括本页自己发送的消息 和 socketio推送的消息）
-        // kind: 1-系统消息 2-我的消息 3-对方消息
-        // date: null为系统当前时间
-        // sendto_socketio: 是否发送socket广播，默认true。读历史记录时，就可以传false
-        send_message: function(kind, msg, cid, sid, date, sendto_socketio) {
+        // @kind: 1-系统消息 2-我的消息 3-对方消息
+        // @date: null为系统当前时间
+        // @prepend: true/else。true时消息加在前面，而且不向服务器推送。读更多历史消息时，可以为true。
+        // @scroll_direction: "top"/"bottom"(默认)，加载完消息后，屏幕移动到最顶还是最尾
+        send_message: function(kind, msg, cid, sid, date, prepend, scroll_direction) {
             var that = this;
 
-            // console.log(kind, msg, cid, sid, date);
+            prepend = prepend || false;
+            scroll_direction = scroll_direction || "bottom";
+
+            // console.log(kind, msg, cid, sid, date, prepend);
 
             date = date || new Date();
             date = new Date(date.toString().replace(/-/ig, "/"));
 
-            if (sendto_socketio === undefined)
-                sendto_socketio = true;
-
             // console.log(date);
 
-            if (kind == 2 && sendto_socketio) {
+            if (kind == 2 && prepend !== true) {
                 // 将消息发往服务器
                 that.socket.emit("send_message", msg, "s", cid, sid, date);
 
@@ -2797,7 +2777,7 @@ define('app/chat_servicer',[
             }
 
             // 如果上一条消息的时间不为空，并且不是系统消息，则需要判断时间间隔来决定是否推送一条时间消息
-            if (kind != 1) {
+            if (kind != 1 && prepend !== true) {
 
                 // console.log(!that.lastTime, date.getTime(), that.lastTime, date.getTime() - that.lastTime, 60 * 1000);
 
@@ -2807,12 +2787,9 @@ define('app/chat_servicer',[
                     that.send_message.apply(that, [1, $func.dateFormat_wx(date)]);
                 }
 
-            }
-
-            // 更新最后消息时间
-            // console.log(date);
-            if (kind != 1)
                 that.lastTime = date.getTime();
+
+            }
 
             // 装载内容
             li.find("p").html("<span class=\"arrow\"></span>" + msg);
@@ -2826,15 +2803,23 @@ define('app/chat_servicer',[
             }
 
             // 装载li
-            li.removeClass("template")
-                .appendTo("ul.talk_list");
+            li.removeClass("template");
+
+            if (prepend === true)
+                li.prependTo("ul.talk_list");
+            else
+                li.appendTo("ul.talk_list");
 
             // 消息窗口向上滚动
             var ul = li.parents(".talk_list");
-            var ul_height_px = ul.height();
-            var ul_scrollHeight = ul[0].scrollHeight - ul.css("padding-bottom").replace("px", "");
-            if (ul_scrollHeight > ul_height_px) {
-                ul.scrollTop(ul_scrollHeight - ul_height_px);
+            if (scroll_direction == "top")
+                ul.scrollTop(0);
+            else {
+                var ul_height_px = ul.height();
+                var ul_scrollHeight = ul[0].scrollHeight - ul.css("padding-bottom").replace("px", "");
+                if (ul_scrollHeight > ul_height_px) {
+                    ul.scrollTop(ul_scrollHeight - ul_height_px);
+                }
             }
         },
 
@@ -2857,7 +2842,6 @@ define('app/chat_servicer',[
 
     return chat_servicer;
 });
-
 define('app',[],function() {
 
     var page_name = document.getElementById("script_page").getAttribute("page");

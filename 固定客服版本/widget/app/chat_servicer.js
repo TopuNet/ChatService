@@ -103,16 +103,19 @@ define([
                 },
                 success: function(result) {
 
+                    var c = 0;
+
                     if (result.forEach) {
                         var sender_kind = 1;
 
-                        var c = 0;
                         result.forEach(function(r) {
 
                             c++;
 
                             switch (r.sender.toLowerCase()) {
                                 case "o":
+                                default:
+                                    c--;
                                     sender_kind = 1;
                                     break;
                                 case "s":
@@ -120,8 +123,6 @@ define([
                                     break;
                                 case "c":
                                     sender_kind = 3;
-                                    break;
-                                default:
                                     break;
                             }
                             // console.log(r.rdate);
