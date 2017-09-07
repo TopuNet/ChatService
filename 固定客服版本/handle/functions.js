@@ -11,6 +11,11 @@ exports.subDomain_default = "www"; // 默认二级域名，没找到主域名或
 
 /*
    高京
+        *【同步】格式化日期。今天的日期只显示时间。不含秒
+        * timestamp：待格式化时间戳
+        * show_time：非今天的日期是否显示具体时间（不含秒）。true/false(默认)
+        formatTimeStamp(timestamp, show_time) {
+
         *【同步】生成随机数随机码。返回字符串
         * n: 位数，数字+字母的组合时请键入偶数
         * kind: 生成种类。1-纯数字 2-纯大写字母 3-纯小写字母 4-数字+大写字母 5-数字+小写字母 6-大写字母或小写字母 7-数字+纯大写字母或小写字母
@@ -240,8 +245,12 @@ var xml2js = require("xml2js"); //解析xml为json用
     2017-07-21
     【同步】 格式化日期。今天的日期只显示时间。不含秒
     * timestamp：待格式化时间戳
+    * show_time：非今天的日期是否显示具体时间（不含秒）。true/false(默认)
 */
-exports.formatTimeStamp = function(timestamp) {
+exports.formatTimeStamp = function(timestamp, show_time) {
+
+    show_time = show_time || false;
+
     var d = new Date(timestamp);
     if (d.toString() == "Invalid Date")
         return "";
@@ -254,19 +263,32 @@ exports.formatTimeStamp = function(timestamp) {
             minute: d.getMinutes()
         };
 
+        // 获得格式化的时间
+        // @_d: 时间
+        // @_str: 已有字符串
+        var getTimeStr = function(_d, _str) {
+            _str = _str || "";
+            if (_str !== "")
+                _str += " ";
+            if (_d.hour < 10)
+                _str += "0";
+            _str += _d.hour + ":";
+            if (_d.minute < 10)
+                _str += "0";
+            _str += _d.minute;
+
+            return _str;
+        }
+
         // 拼接格式化字符串
         var str,
             now = new Date();
         if (now.getFullYear() == d.year && now.getMonth() + 1 == d.month && now.getDate() == d.date) {
-            str = "";
-            if (d.hour < 10)
-                str += "0";
-            str += d.hour + ":";
-            if (d.minute < 10)
-                str += d.minute;
-            str += d.minute;
+            str = getTimeStr(d);
         } else {
             str = d.year + "/" + d.month + "/" + d.date;
+            if (show_time)
+                str = getTimeStr(d, str);
         }
 
         return str;
@@ -1285,15 +1307,15 @@ exports.MailSend = function(Subject, isHtml, Body, HtmlBody, FromName, MailTo, B
         var auth = {
             user: config.mail_server.split('|')[0],
             pass: config.mail_server.split('|')[1]
-                // user: "x3b_net_cn@qq.com",
-                // pass: "gpcockjwysqkddia"
-                //pass:"x3bnetcn123456"
-                // user: "x3b_net_cn_www@sina.com",
-                // pass: "x3b_net_cn123456"
-                // user: "x3b_net_cn@sohu.com",
-                // pass: "x3b_net_cn123456"
-                // user: "x3b_net_cn@yahoo.com",
-                // pass: "x3bnetcn123456"
+            // user: "x3b_net_cn@qq.com",
+            // pass: "gpcockjwysqkddia"
+            //pass:"x3bnetcn123456"
+            // user: "x3b_net_cn_www@sina.com",
+            // pass: "x3b_net_cn123456"
+            // user: "x3b_net_cn@sohu.com",
+            // pass: "x3b_net_cn123456"
+            // user: "x3b_net_cn@yahoo.com",
+            // pass: "x3bnetcn123456"
         };
 
         var transporter = nodemailer.createTransport({

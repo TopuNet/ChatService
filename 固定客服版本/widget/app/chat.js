@@ -65,7 +65,7 @@ define([
         show_more_records_Listener: function() {
             var that = this;
 
-            var button = $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+            $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
                 e.preventDefault();
 
                 // console.log("here");
@@ -87,8 +87,8 @@ define([
 
                         var more_record = $("ul.list .more_record");
 
+                        var c = 0;
                         if (result.forEach) {
-                            var c = 0;
                             result.forEach(function(r) {
 
                                 c++;
@@ -109,23 +109,21 @@ define([
                                 that.send_message(kind, r.content, r.cid, r.sid, true);
                             });
 
-                            more_record.prependTo("ul.list");
-
-                            if (c < that.RECORD_COUNT)
-                                more_record.removeClass("show");
-                        } else {
-
-                            more_record.removeClass("show");
                         }
+
+                        if (c < that.RECORD_COUNT)
+                            more_record.removeClass("show");
+                        else
+                            more_record.prependTo("ul.list");
                     }
-                })
+                });
 
             });
         },
 
         // 默认滚动到最底
         rollToBottom: function() {
-            var that = this;
+            // var that = this;
 
             // 在/lib/mobile_stop_moved中，setTimeOut 修改.stoped_wrapper的高，所以此处要延时处理
             setTimeout(function() {
@@ -213,7 +211,7 @@ define([
 
         // 处理消息推送（包括本页自己发送的消息 和 socketio推送的消息）
         // kind: 1-系统消息 2-我的消息 3-对方消息
-        // prepend: true/else
+        // prepend: true/else。true时消息加在前面，而且不向服务器推送。读历史消息时，可以为true。
         send_message: function(kind, msg, cid, sid, prepend) {
             var that = this;
 
@@ -265,7 +263,7 @@ define([
             }
 
             // 装载li
-            li.removeClass("template")
+            li.removeClass("template");
             if (prepend === true)
                 li.prependTo("ul.list");
             else

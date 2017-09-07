@@ -12,7 +12,7 @@ var router = require("express").Router(),
     login_route = "/servicer/login", // 登录页
     db, // mongodb对象
     chat_config = require("../../handle/chat_config"),
-    RECORD_COUNT = 10;
+    getRecord_handle = require("../../handle/getRecords");
 
 // 生成token并返回
 // username: 用户名
@@ -154,10 +154,10 @@ router.get("/", mw_check_login_status, function(req, res) {
         async.waterfall([
             getRecords,
             infuse_deal
-        ], function(err) {
+        ], function() {
             callback(null, login_servicer, chats);
-        })
-    }
+        });
+    };
 
     // 执行async
     async.waterfall([
@@ -177,7 +177,7 @@ router.get("/", mw_check_login_status, function(req, res) {
             });
             // console.log("\n\nservicer", 214, "chats:\n", chats);
         }
-    })
+    });
 });
 
 // 登录页
@@ -241,7 +241,7 @@ router.post("/login/deal", function(req, res) {
                 callback("系统错误，请稍后再试");
             else
                 callback(null);
-        })
+        });
     };
 
     // 执行async
@@ -320,56 +320,8 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
 });
 
 // 根据cid和sid获得会话记录（sid来源于登录验证），并返回html代码
-router.post("/getRecordsHtmlByCid", mw_check_login_status, function(req, res) {
-
-    var cid;
-
-    // 获得表单数据
-    var get_Params = function(callback) {
-        cid = req.body.cid || "";
-        callback(null);
-    };
-
-    // 查询
-    var getRecords = function(callback) {
-
-        var collection_records = db.collection("records");
-        collection_records.find({
-                cid: cid,
-                sid: req.mw.login_servicer._id.toString()
-            }).sort([
-                ["rdate", -1]
-            ])
-            .limit(RECORD_COUNT)
-            .toArray(function(err, _records) {
-
-                var records = [],
-                    i, len = _records.length;
-
-                for (i = len - 1; i >= 0; i--) {
-                    records.push(_records[i]);
-                }
-
-                // console.log("\n\nservicer",391,"req.mw.login_servicer._id",req.mw.login_servicer._id);
-                callback(null, records);
-            });
-    };
-
-    // 执行async
-    async.waterfall([
-        get_Params,
-        getRecords
-    ], function(err, records) {
-
-        db.close();
-
-        if (err) {
-            console.log("\n\nservicer", 399, "err:\n", err);
-            res.send("err");
-        } else {
-            res.json(records);
-        }
-    });
+router.post("/getRecords", mw_check_login_status, function(req, res) {
+    getRecord_handle.getRecords(req, res, req.mw.login_servicer._id);
 });
 
 module.exports = router;

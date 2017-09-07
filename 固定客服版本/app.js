@@ -35,7 +35,7 @@ app.engine('.html', ejs.__express);
  * 
  */
 app.locals.formatTimeStamp = function(timestamp) {
-    return func.formatTimeStamp(timestamp);
+    return func.formatTimeStamp(timestamp, true);
 };
 
 /*
