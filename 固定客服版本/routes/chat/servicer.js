@@ -90,8 +90,7 @@ router.get("/", mw_check_login_status, function(req, res) {
         collection_chats.find({
             sid: login_servicer._id
         }).sort([
-            ["timestamp", -1],
-            ["_id", -1]
+            ["last_timestamp", -1]
         ]).each(function(err, chat) {
             if (err) {
                 console.log("\n\nservicer", 86, "err:\n", err);
@@ -281,15 +280,19 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
     };
 
     // 查询
-    var getRecord = function(_db, callback) {
+    var getChats = function(_db, callback) {
+
+        // console.log("\n\servicer", 285, "\ncid:", cid, "\nreq.mw.login_:\n", req.mw.login_servicer._id);
 
         var collection_chats = _db.collection("chats");
         collection_chats.find({
             cid: cid,
             sid: mongo.ObjectID(req.mw.login_servicer._id)
-        }).next(function(err, chat) {
+        }).sort([
+            ["last_timestamp", -1]
+        ]).next(function(err, chat) {
             _db.close();
-            // console.log("\n\nsocketio", 333, "db:", db === null, "\nerr:", err, "\nchat:\n", chat);
+            // console.log("\n\servicer", 294, "\nerr:", err, "\nchat:\n", chat);
             if (err)
                 callback(err);
             else if (!chat)
@@ -305,13 +308,13 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
     async.waterfall([
         get_Params,
         mongo.connect_async,
-        getRecord
+        getChats
     ], function(err, chat) {
 
         db.close();
 
         if (err) {
-            console.log("\n\nservicer", 354, "err:\n", err);
+            // console.log("\n\nservicer", 354, "err:\n", err);
             res.send("err");
         } else {
             res.json(chat);

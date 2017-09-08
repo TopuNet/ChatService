@@ -276,11 +276,11 @@ define([
                         url: "/servicer/findChatByCid",
                         type: "post",
                         data: {
-                            cid: cid
+                            cid: cid.toString()
                         },
                         success: function(chat) {
 
-                            // console.dir(chat);
+                            console.dir(chat);
 
                             if (chat === "err") {
                                 console.log("err");
@@ -333,9 +333,11 @@ define([
             prepend = prepend || false;
             scroll_direction = scroll_direction || "bottom";
 
+            // console.log("");
             // console.log(kind, msg, cid, sid, date, prepend);
 
             date = date || new Date();
+            // console.log(date.toString().replace(/-/ig, "/"));
             date = new Date(date.toString().replace(/-/ig, "/"));
 
             // console.log(date);

@@ -850,6 +850,7 @@ define('app/chat',[
             setTimeout(function() {
 
                 var stoped_wrapper = $(".stoped_wrapper");
+                console.log(stoped_wrapper.length);
                 var stoped_wrapper_scrollheight_px = stoped_wrapper[0].scrollHeight;
                 var stoped_wrapper_height_px = stoped_wrapper.height();
 
@@ -996,7 +997,8 @@ define('app/chat',[
                 stoped_wrapper.scrollTop(0);
             } else {
                 var ul = li.parents(".list");
-                var ul_height_px = parseFloat(ul.height()) + parseFloat(ul.css("padding-bottom").replace("px", "")) + parseFloat($(".fixed_space").height());
+                var ul_padding_bottom_px = (ul.css("padding-bottom") || "").replace("px", "");
+                var ul_height_px = parseFloat(ul.height()) + parseFloat(ul_padding_bottom_px) + parseFloat($(".fixed_space").height());
                 var stoped_wrapper_height_px = stoped_wrapper.height();
                 // console.log(ul_height_px, stoped_wrapper_height_px);
                 if (ul_height_px > stoped_wrapper_height_px) {
@@ -2744,9 +2746,11 @@ define('app/chat_servicer',[
             prepend = prepend || false;
             scroll_direction = scroll_direction || "bottom";
 
+            // console.log("");
             // console.log(kind, msg, cid, sid, date, prepend);
 
             date = date || new Date();
+            // console.log(date.toString().replace(/-/ig, "/"));
             date = new Date(date.toString().replace(/-/ig, "/"));
 
             // console.log(date);

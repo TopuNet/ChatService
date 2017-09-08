@@ -1,6 +1,8 @@
 /*
     封装socket.io，以便获得server，从而监听
 
+    !注意!：socket.io连接的不是iis中的服务，连接的是另一个服务（服务器上iis架的是网站，服务里相当于架的是socketio），修改后需要重启服务而不是重启iis
+
     that = {
         io
     }
@@ -180,7 +182,7 @@ var socketio = function() {
             // var that = this;
 
             // sender"c"-客户消息 "s"-客服消息 "o"-系统消息
-            socket.on("send_message", function(msg, sender, cid, sid, rdate) {
+            socket.on("send_message", function(msg, sender, cid, sid, _rdate) {
 
                 // console.log("\n\nsocket", 156, "msg:", msg, "sender:", sender, "cid:", cid, "sid:", sid, "rdate:", rdate);
                 // that.io.clients(function(err, c) {
@@ -192,7 +194,7 @@ var socketio = function() {
                 // });
 
                 var db;
-                rdate = new Date(rdate);
+                var rdate = new Date(_rdate);
 
                 // 更新chats表的last_time和last_content
                 var update_last_time = function(_db, callback) {
@@ -248,10 +250,10 @@ var socketio = function() {
                 // 发送广播
                 var send_broadcast = function(callback) {
 
-                    // console.log("\n\nsocketio", 249, "socket.rooms:\n", socket.rooms);
+                    // console.log("\n\nsocketio", 249, "rdate:\n", rdate, "\n", rdate.toLocaleString());
 
                     // 客户上线状态
-                    socket.to("room_" + cid + "_" + sid).emit("send_message", sender == "o" ? 1 : 3, msg, cid, sid, rdate);
+                    socket.to("room_" + cid + "_" + sid).emit("send_message", sender == "o" ? 1 : 3, msg, cid, sid, rdate.toLocaleString());
 
                     callback(null);
                 };
