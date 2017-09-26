@@ -11,7 +11,7 @@ var config = require("./config"),
 // async = require("async");
 
 // socket连接地址
-exports.GLOBAL_SOCKET_URL = "http://172.27.14.4:4545";
+exports.GLOBAL_SOCKET_URL = "http://192.168.1.228:4545";
 
 // 客户端默认欢迎语
 exports.welcome_message = "已为您接入客服，请问您有什么问题？";
@@ -25,8 +25,8 @@ exports.client_title = "客服系统-移动端";
 // 客服pc端title
 exports.servicer_pc_title = "客服系统-客服pc端";
 
-exports.ImageDomain = "http://xcmp.topu.net"; //数据库中读取的图片的域名前缀
-exports.host = "xcmp.topu.net"; //接口地址
+exports.ImageDomain = "http://mp-dev.zhongqifu.com.cn"; //数据库中读取的图片的域名前缀
+exports.host = "mp-dev.zhongqifu.com.cn"; //接口地址
 exports.port = 80; //端口号
 
 // 根据cid拉取会员信息-姓名(昵称)、头像、性别
@@ -37,7 +37,6 @@ exports.getClientInfo = function(cid, query, callback) {
         if (err) {
             callback(err);
         } else {
-
             callback(null, result[0]);
         }
     };
@@ -50,6 +49,56 @@ exports.getClientInfo = function(cid, query, callback) {
                 "d_Alive": "1",
                 "d_Mid": cid.toString(),
                 "s_Total_parameter": "Mid,Nickname,Head_img,Mname,Sex"
+            }
+        }
+    }];
+
+    chat_config.getDataFromRestFul(api_callback, Json_Select, query);
+};
+
+// 拉取服务分类
+// @query: req.query
+exports.getSort = function(query, callback) {
+
+    var api_callback = function(err, result) {
+        if (err) {
+            callback(err);
+        } else {
+
+            callback(null, result);
+        }
+    };
+
+    var Json_Select = [{
+        "type": "Service_Classification",
+        "act": "Select_List",
+        "para": {
+            "params": {
+                "s_Alive": "1",
+                "s_Hot": "0",
+                "s_Keywords": "",
+                "s_Of_Scid": "",
+                "s_Order": "Of_Scid,Layer,Scid",
+                "s_Recommend": "0",
+                "s_Scid": "",
+                "s_Select_level_two": "1",
+                "s_Total_parameter": "Scid,Of_Scid,Of_Ctitle,Ctitle,Layer"
+            },
+            "pages": {
+                "p_c": "",
+                "p_First": "",
+                "p_inputHeight": "",
+                "p_Last": "",
+                "p_method": "",
+                "p_Next": "",
+                "p_Page": "",
+                "p_pageName": "",
+                "p_PageStyle": "",
+                "p_Pname": "",
+                "p_Previous": "",
+                "p_Ps": "",
+                "p_sk": "",
+                "p_Tp": ""
             }
         }
     }];
@@ -150,8 +199,6 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
         };
 
         func.Request(opt, function(data) {
-
-            // console.log("\n\nconfig", 123, "opt:\n", opt);
 
             var i = 0,
                 j = 0,

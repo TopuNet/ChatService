@@ -9,6 +9,7 @@ var router = require("express").Router(),
     async = require("async"),
     mongo = require("../../handle/mongodb"),
     login_bid, // 验证登录状态后的bid，0代表失败
+    chat_config = require("../../handle/chat_config"),
     db;
 
 // 验证登录状态_async模式。bid存入login_bid中，0代表未登录
@@ -81,7 +82,14 @@ router.get("/login", function(req, res) {
 router.post("/servicer/get_form", function(req, res) {
     var _id = req.body._id,
         fs = require("fs"),
+        service_sort,
         dirPath = "./inc/headimg";
+
+    // 获得 service_sort
+    var get_service_sort = function(sort, callback) {
+        service_sort = sort;
+        callback(null);
+    }
 
     // 验证文件夹是否存在
     var valid_dir = function(_db, callback) {
@@ -109,7 +117,7 @@ router.post("/servicer/get_form", function(req, res) {
     // 获取_id对应的客服记录
     var get_servicer = function(files, callback) {
         if (_id === "") // 添加
-            callback(null, files);
+            callback(null, files, null);
         else { // 修改
             var collection_servicers = db.collection("servicers");
             collection_servicers.find({
@@ -123,13 +131,30 @@ router.post("/servicer/get_form", function(req, res) {
         }
     };
 
+    // 获取分类
+    var get_service_sort = function(files, servicer, callback) {
+
+        chat_config.getSort(req.query, function(err, sort) {
+
+            if (err) {
+                console.log("\n\nroutes mp", 141, "err:\n", err);
+                callback(err);
+            } else {
+
+                callback(null, files, servicer, sort[0].list);
+            }
+        })
+    };
+
     // 执行async
     async.waterfall([
         mongo.connect_async,
         valid_dir,
         get_headimg,
-        get_servicer
-    ], function(err, files, servicer) {
+        get_servicer,
+        get_service_sort
+    ], function(err, files, servicer, service_sort) {
+
         db.close();
 
         if (err)
@@ -139,12 +164,14 @@ router.post("/servicer/get_form", function(req, res) {
             sname: "",
             nickname: "",
             passwd: "",
-            headimg: ""
+            headimg: "",
+            sort: ""
         };
         res.render("Chat/mp_servicer_form.html", {
             servicer: servicer,
             dirPath: dirPath,
-            files: files
+            files: files,
+            sort: service_sort
         });
     });
 });
@@ -163,7 +190,8 @@ router.post("/servicer/form_deal", function(req, res) {
             sname: req.body.sname.toString(),
             nickname: req.body.nickname.toString(),
             passwd: req.body.passwd.toString(),
-            headimg: req.body.headimg.toString().replace(head_replaceRegx, "")
+            headimg: req.body.headimg.toString().replace(head_replaceRegx, ""),
+            sort: req.body.sort.toString()
         };
         if (dataForm._id !== "")
             dataForm._id = mongo.ObjectID(dataForm._id);
@@ -191,6 +219,7 @@ router.post("/servicer/form_deal", function(req, res) {
                         nickname: dataForm.nickname,
                         passwd: func.CreateHash(dataForm.passwd, "sha1", 1),
                         headimg: dataForm.headimg,
+                        sort: dataForm.sort,
                         alive: true
                     }, function(err, r) {
                         if (err)
@@ -217,7 +246,8 @@ router.post("/servicer/form_deal", function(req, res) {
                     var updateItems = {
                         sname: dataForm.sname,
                         nickname: dataForm.nickname,
-                        headimg: dataForm.headimg
+                        headimg: dataForm.headimg,
+                        sort: dataForm.sort
                     };
                     if (dataForm.passwd !== "")
                         updateItems.passwd = func.CreateHash(dataForm.passwd, "sha1", 1);

@@ -28,26 +28,8 @@ define([
             // that.send_message.apply(that, [1, "window_screen_height:" + window.screen.height]);
             // that.send_message.apply(that, [1, "window_innerHeight:" + window.innerHeight]);
 
-            // 处理服务器端渲染err
+            // 处理服务器端渲染err，无错误再进行其他事件的监听和socket连接
             that.deal_err.apply(that);
-
-            // 判断是否需要显示“查看更多历史消息”
-            that.jduge_show_more_records.apply(that);
-
-            // 解决ios端fixed居底input被键盘遮挡的问题
-            $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
-
-            // 默认滚动到最底
-            that.rollToBottom.apply(that);
-
-            // 监听socket连接成功
-            that.socket_connect_success.apply(that);
-
-            // 接收socket推送消息
-            that.socket_send_message.apply(that);
-
-            // 监听表单提交
-            that.form_send_submit_Listener.apply(that);
         },
 
         // 判断是否需要显示“查看更多历史消息”
@@ -141,9 +123,9 @@ define([
         deal_err: function() {
             var that = this;
 
-            // 客服进入已有其他客服接入的对话时
+            // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
-                that.show_error_dialog("此商户暂时没有顾问可提供服务", function() {
+                that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
                     location.history.back();
                 });
             } else if (Base_meta.err == "sidError") {
@@ -151,6 +133,24 @@ define([
                     location.href = "list";
                 });
             } else {
+
+                // 判断是否需要显示“查看更多历史消息”
+                that.jduge_show_more_records.apply(that);
+
+                // 解决ios端fixed居底input被键盘遮挡的问题
+                $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
+
+                // 默认滚动到最底
+                that.rollToBottom.apply(that);
+
+                // 监听socket连接成功
+                that.socket_connect_success.apply(that);
+
+                // 接收socket推送消息
+                that.socket_send_message.apply(that);
+
+                // 监听表单提交
+                that.form_send_submit_Listener.apply(that);
 
                 // 连接socket
                 that.socket_connect.apply(that);

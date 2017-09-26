@@ -1,10 +1,10 @@
 /*
-	chat管理平台页js
-	高京
-	2017-05-26
-	that = {
-		servicer_form_layershow: 添加修改客服的表单弹层对象
-	}
+    chat管理平台页js
+    高京
+    2017-05-26
+    that = {
+        servicer_form_layershow: 添加修改客服的表单弹层对象
+    }
 */
 
 define(["lib/LayerShow"], function($LayerShow) {
@@ -201,7 +201,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                 // Pics_arrow_right: showKind = 1 时有效。 图片切换 右箭头图片路径。 默认 / inc / LayerShow_arrow_left.png。
                 // callback_image_click: showKind = 1 时有效。 图片点击回调： 1 - 关闭弹层 | 2 - 下一张图片 | function(li_obj) - 自定义方法。 默认 "1"
                 info_content: form_html,
-                info_box_width_per: parseInt(350 / $(window).width() * 100),
+                info_box_width_per: 80,
                 // info_box_height_per: showKind = 2 时有效， 内容盒高度百分比。 默认90
                 // info_box_radius: showKind = 2 时有效， 内容盒是否圆角。 默认true
                 // info_box_bg: showKind = 2 时有效， 内容盒背景。 默认 "#ffffff"
@@ -211,6 +211,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 // info_box_lineHeight: showKind = 2 时有效， 内容盒行间距。 默认 "30px"
                 info_box_use_JRoll: false,
                 // JRoll_obj: JRoll对象。 不使用JRoll做内容盒滚动， 可不传。
+                info_bottom_fixed_content: "<input type=\"submit\" class=\"form_submit_button weui-btn weui-btn_plain-default\" style=\"height:50px;\" value=\"提 交\">",
+                info_bottom_fixed_height: 50,
                 // Pics_close_show: true / false。 显示关闭按钮。 默认true
                 // Pics_close_path: 关闭按钮图片路径。 默认 / inc / LayerShow_close.png。
                 // callback_before: 弹层前回调。 如显示loading层。 无默认
@@ -230,13 +232,19 @@ define(["lib/LayerShow"], function($LayerShow) {
             var that = this;
 
             // 监听头像点击
-            that.headimg_click_Lisetener.apply(that);
+            that.headimg_click_Listener.apply(that);
+
+            // 监听全部分类的点击
+            that.sort_checkall_Listener.apply(that);
+
+            // 监听分类点击
+            that.sort_li_click_Listener.apply(that);
 
             // 监听表单提交
             that.form_submit_Listener.apply(that);
         },
         // 监听头像点击
-        headimg_click_Lisetener: function() {
+        headimg_click_Listener: function() {
             // var that = this;
 
             $(".headimg_ul li").unbind().click(function() {
@@ -244,14 +252,61 @@ define(["lib/LayerShow"], function($LayerShow) {
                 $(this).addClass("selected");
             });
         },
+        // 监听全部分类的点击
+        sort_checkall_Listener: function() {
+            var that = this;
+
+            var checkall = $(".mp_servicer_form ul.form_line_ul li.sort_li .checkall");
+            var sort_ul = $(".mp_servicer_form ul.form_line_ul .sort_ul");
+
+            // 获取ul高度并存于that
+            that.sort_ul_height_px = sort_ul.height();
+
+            // 给ul定高
+            sort_ul.css("height", that.sort_ul_height_px + "px");
+
+            // 监听点击
+            checkall.unbind().on("click", function() {
+                var checked = checkall[0].checked;
+                if (checked) {
+                    // sort_ul.css({
+                    //     height: 0
+                    // });
+                    sort_ul.find(".sort_b:not(.checked)").addClass("checked");
+                } else {
+                    // sort_ul.css({
+                    //     height: that.sort_ul_height_px + "px"
+                    // });
+                    sort_ul.find(".sort_b").removeClass("checked");
+                }
+            });
+        },
+        // 监听分类的点击
+        sort_li_click_Listener: function() {
+
+            var li = $(".mp_servicer_form ul.form_line_ul li.sort_li li.sort_b");
+
+            li.unbind().on("click", function() {
+                var _this = $(this);
+
+                _this.toggleClass("checked");
+            });
+        },
         // 监听表单提交
         form_submit_Listener: function() {
             var that = this;
+
+            // 监听表单提交
             $(".mp_servicer_form form").unbind().on("submit", function() {
 
                 // 表单提交验证
                 that.form_submit_check.apply(that, [$(this)]);
                 return false;
+            });
+
+            // 监听按钮点击，发起表单提交
+            $(".form_submit_button").unbind().on("click", function() {
+                $(".mp_servicer_form form").submit();
             });
         },
         // 表单提交验证
@@ -261,7 +316,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 sname = form_obj.find("input.sname").val(),
                 nickname = form_obj.find("input.nickname").val(),
                 passwd = form_obj.find("input.passwd").val(),
-                headimg_li = form_obj.find(".selected");
+                headimg_li = form_obj.find(".headimg_ul .selected"),
+                sort_li = form_obj.find(".sort_ul .sort_b.checked");
 
             // 验证报错，空字符串为正确
             var error_str = "";
@@ -287,12 +343,20 @@ define(["lib/LayerShow"], function($LayerShow) {
 
             } else {
 
+                // 拼接sort
+                var sort = "";
+                $.each(sort_li, function(index, s) {
+                    sort += "<" + $(s).attr("Scid") + ">";
+                });
+
+                // 表单提交处理
                 that.form_submit_deal.apply(that, [form_obj, {
                     _id: _id,
                     sname: sname,
                     nickname: nickname,
                     passwd: passwd,
-                    headimg: headimg_li.find("img").attr("src")
+                    headimg: headimg_li.find("img").attr("src"),
+                    sort: sort
                 }]);
             }
         },

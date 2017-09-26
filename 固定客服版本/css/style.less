@@ -232,7 +232,8 @@ body.chat_mp_index .wrapper {
 
 // 通用 - 管理 客服 添加/修改 表单部分
 div.mp_servicer_form {
-    width: 300px;
+    // width: 300px;
+    width: 80%;
     margin: 20px auto; // 表单行
     ul.form_line_ul>li {
         height: 40px;
@@ -245,24 +246,33 @@ div.mp_servicer_form {
             span {
                 vertical-align: top;
             }
+        } // 标题
+        span {
+            float: left;
+        } // checkbox外的label
+        label {
+            cursor: pointer;
+        } // input的外盒
+        div.input_box {
+            overflow: hidden;
         } // input
         input {
-            width: 240px;
+            width: 100%;
+            &[type=checkbox] {
+                width: 20px;
+            }
         } // 头像
         ul.headimg_ul {
-            .inline-block();
-            width: 240px;
-            text-align: center; // 单元
+            display: block;
+            overflow: hidden;
+            text-align: left; // 单元
             li {
                 .inline-block();
                 width: 50px;
                 height: 50px;
                 position: relative;
                 margin: 10px 0 0 25px;
-                cursor: pointer; // 首列
-                &.first_cell {
-                    margin-left: 0;
-                } // 头像
+                cursor: pointer; // 头像
                 img {
                     width: 50px;
                     height: 50px;
@@ -282,15 +292,38 @@ div.mp_servicer_form {
                     }
                 }
             }
-        }
-    } // 提交按钮
-    input.form_submit_button {
-        margin-top: 30px;
-        cursor: pointer; // 悬停效果
-        &:hover {
-            background: #f5f5f5;
+        } // 分类行
+        &.sort_li {
+            height: auto; // 行内ul，包裹所有一二级分类
+            .sort_ul {
+                // margin-top: 40px; // 一级分类
+                li.sort_a {
+                    font-weight: bold;
+                } // 二级分类
+                li.sort_b {
+                    .inline-block();
+                    height: 30px;
+                    line-height: 30px;
+                    margin-left: 10px;
+                    border: dashed 1px #ccc;
+                    padding: 0 5px;
+                    cursor: pointer; // 高亮样式
+                    // 悬停样式
+                    &:hover {
+                        border: solid 1px #ccc;
+                    } // 选中状态
+                    &.checked {
+                        border: solid 1px #3C8DC4;
+                    }
+                }
+            }
         }
     }
+}
+
+// 通用 - 底部提交按钮
+.form_submit_button {
+    cursor: pointer;
 }
 
 // 客服会话页

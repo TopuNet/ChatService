@@ -101,6 +101,8 @@ router.get("/", function(req, res) {
         bid = req.query.bid || 0;
         bid = parseFloat(bid) || 0;
 
+        sort = req.query.sort || -1;
+
         callback(null);
     };
 
@@ -119,7 +121,7 @@ router.get("/", function(req, res) {
 
         // console.log("\n\nchat", 73, "collection\n", collection_waiting);
 
-        if (kind === 0 || cid === "" || bid === 0)
+        if (cid === "" || bid === 0)
             res.send("line 112: 参数不正确" + kind + ":" + cid + ":" + bid);
         else {
 
@@ -129,29 +131,30 @@ router.get("/", function(req, res) {
 
                 cname = "客户";
 
-                // 根据cid+bid查找会话，没有则创建
+                // 根据cid+bid+sort查找会话，没有则创建
                 var find_chat = function(api_result_callback) {
-                    collection_chats.find({ "cid": cid, "bid": bid }).next(function(err, chat) {
+                    collection_chats.find({ "cid": cid, "bid": bid, "sort": sort }).next(function(err, chat) {
                         // console.log("\n\nchat", 143, "chat:\n", chat);
 
                         // 没有则添加
                         if (!chat) {
 
-                            if (kind == 2)
-                                res.send("line 130: 参数不正确");
-
                             // 指派客服
                             var appoint_servicer = function(_callback) {
 
-                                // 获得该商户全部客服
+                                // 获得该商户+该分类全部客服
                                 var get_servicers = function(__callback) {
-                                    collection_servicers.find({ "alive": true, "bid": bid }).toArray(function(err, servicers) {
-                                        if (err) {
+
+                                    var result_deal = function(err, servicers) {
+                                        console.log("\n\nroutes chat", 149, "err:\n", err);
+                                        console.log("\n\nroutes chat", 150, "servicers:\n", servicers);
+                                        if (err || !servicers.length || servicers.length === 0) {
                                             api_result_callback("noServicers");
                                         } else {
                                             __callback(null, servicers);
                                         }
-                                    });
+                                    };
+                                    eval("collection_servicers.find({ \"alive\": true, \"bid\": bid, \"sort\": /<" + sort + ">/ }).toArray(function(err,servicers){result_deal(err, servicers);});");
                                 };
 
                                 // 获得会话数量最少的客服
