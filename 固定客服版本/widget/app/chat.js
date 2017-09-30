@@ -126,9 +126,9 @@ define([
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.history.back();
+                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1"
                 });
-            } else if (Base_meta.err == "sidError") {
+            } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
                     location.href = "list";
                 });
@@ -143,17 +143,17 @@ define([
                 // 默认滚动到最底
                 that.rollToBottom.apply(that);
 
-                // 监听socket连接成功
-                that.socket_connect_success.apply(that);
-
-                // 接收socket推送消息
-                that.socket_send_message.apply(that);
-
                 // 监听表单提交
                 that.form_send_submit_Listener.apply(that);
 
                 // 连接socket
                 that.socket_connect.apply(that);
+
+                // 监听socket连接成功
+                that.socket_connect_success.apply(that);
+
+                // 接收socket推送消息
+                that.socket_send_message.apply(that);
             }
         },
 
@@ -162,7 +162,7 @@ define([
             var that = this;
 
             // 客户
-            if (Base_meta.kind == 1)
+            if (Base_meta.kind == "1")
                 that.send_message.apply(that, [1, Base_meta.welcome_message]);
             // that.send_message.apply(that, [1, "您好!欢迎来到中企服！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。"]);
 

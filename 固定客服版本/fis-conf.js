@@ -38,12 +38,12 @@ fis.match('/images/**.png', {
 // Publish start
 fis.media('pub').match('/inc/**', {
     url: '$0',
-    domain: 'http://xcchat.topu.net'
+    domain: 'http://chat.zhongqifu.com.cn'
 });
 
 fis.media('pub').match('{/css/**,/images/**,/widget/**}', {
     url: '$0',
-    domain: 'http://xcchat.topu.net/static'
+    domain: 'http://chat.zhongqifu.com.cn/static'
 });
 
 fis.media('pub').match('/widget/**.js', {

@@ -749,26 +749,8 @@ define('app/chat',[
             // that.send_message.apply(that, [1, "window_screen_height:" + window.screen.height]);
             // that.send_message.apply(that, [1, "window_innerHeight:" + window.innerHeight]);
 
-            // 处理服务器端渲染err
+            // 处理服务器端渲染err，无错误再进行其他事件的监听和socket连接
             that.deal_err.apply(that);
-
-            // 判断是否需要显示“查看更多历史消息”
-            that.jduge_show_more_records.apply(that);
-
-            // 解决ios端fixed居底input被键盘遮挡的问题
-            $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
-
-            // 默认滚动到最底
-            that.rollToBottom.apply(that);
-
-            // 监听socket连接成功
-            that.socket_connect_success.apply(that);
-
-            // 接收socket推送消息
-            that.socket_send_message.apply(that);
-
-            // 监听表单提交
-            that.form_send_submit_Listener.apply(that);
         },
 
         // 判断是否需要显示“查看更多历史消息”
@@ -850,7 +832,7 @@ define('app/chat',[
             setTimeout(function() {
 
                 var stoped_wrapper = $(".stoped_wrapper");
-                console.log(stoped_wrapper.length);
+                // console.log(stoped_wrapper.length);
                 var stoped_wrapper_scrollheight_px = stoped_wrapper[0].scrollHeight;
                 var stoped_wrapper_height_px = stoped_wrapper.height();
 
@@ -862,19 +844,37 @@ define('app/chat',[
         deal_err: function() {
             var that = this;
 
-            // 客服进入已有其他客服接入的对话时
+            // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
-                that.show_error_dialog("此商户暂时没有顾问可提供服务", function() {
-                    location.history.back();
+                that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
+                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1"
                 });
-            } else if (Base_meta.err == "sidError") {
+            } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
                     location.href = "list";
                 });
             } else {
 
+                // 判断是否需要显示“查看更多历史消息”
+                that.jduge_show_more_records.apply(that);
+
+                // 解决ios端fixed居底input被键盘遮挡的问题
+                $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
+
+                // 默认滚动到最底
+                that.rollToBottom.apply(that);
+
+                // 监听表单提交
+                that.form_send_submit_Listener.apply(that);
+
                 // 连接socket
                 that.socket_connect.apply(that);
+
+                // 监听socket连接成功
+                that.socket_connect_success.apply(that);
+
+                // 接收socket推送消息
+                that.socket_send_message.apply(that);
             }
         },
 
@@ -883,7 +883,7 @@ define('app/chat',[
             var that = this;
 
             // 客户
-            if (Base_meta.kind == 1)
+            if (Base_meta.kind == "1")
                 that.send_message.apply(that, [1, Base_meta.welcome_message]);
             // that.send_message.apply(that, [1, "您好!欢迎来到中企服！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。"]);
 
@@ -1249,14 +1249,15 @@ define('app/chat_mp_login',[],function() {
 });
 
 /*
-    2.2.1
+    2.3.2
     高京
     2016-10-25
 
     this = {
         dom_bg_layer: 背景层,
         dom_info_box: 内容层,
-        dom_info_p_box: 内容和段落中间层——JRoll用,
+        dom_info_bottom_fixed_box: 底部fixed层
+        dom_info_jroll_box: 内容jroll层,
         dom_info_p: 段落层,
         dom_image_box: 图片层,
         dom_close_box: 关闭层,
@@ -1309,11 +1310,16 @@ function LayerShow() {
                 })
                 .appendTo(dom_body);
 
-            // 内容和段落中间层——JRoll用
-            _this.dom_info_p_box = $(document.createElement("div")).appendTo(_this.dom_info_box);
+            // 底部fixed层
+            _this.dom_info_bottom_fixed_box = $(document.createElement("div")).appendTo(_this.dom_info_box);
+
+            // 内容jroll层
+            _this.dom_info_jroll_box = $(document.createElement("div"))
+                .attr("class", "jroll")
+                .prependTo(_this.dom_info_box);
 
             // 段落层
-            _this.dom_info_p = $(document.createElement("p")).css("margin", "0").appendTo(_this.dom_info_p_box);
+            _this.dom_info_p = $(document.createElement("p")).css("margin", "0").appendTo(_this.dom_info_jroll_box);
 
             // 图片层
             _this.dom_image_box = $(document.createElement("div"))
@@ -1396,6 +1402,7 @@ function LayerShow() {
         resize: function() {
             var _this = this;
 
+            // 获得窗口尺寸
             _this.window_width_px = $(window).width();
             _this.window_height_px = $(window).height();
 
@@ -1551,9 +1558,24 @@ function LayerShow() {
                     "margin-top": (-_this.info_box_height_px / 2) + "px",
                     "margin-left": (-_this.info_box_width_px / 2) + "px",
                     "background": _this.Paras.info_box_bg,
-                    "overflow-x": "hidden",
-                    "overflow-y": "auto",
+                    "overflow": "hidden",
                     "z-index": _this.Paras.z_index + 1
+                });
+
+
+                // 设置jroll层样式
+                var jroll_height = _this.info_box_height_px;
+                if (_this.Paras.info_bottom_fixed_content && _this.Paras.info_bottom_fixed_content !== "") {
+                    jroll_height -= _this.Paras.info_bottom_fixed_height;
+
+                    // 设置bottom_fixed样式
+                    _this.dom_info_bottom_fixed_box.css({
+                        "height": _this.Paras.info_bottom_fixed_height + "px"
+                    });
+                }
+                _this.dom_info_jroll_box.css({
+                    "height": jroll_height + "px",
+                    "overflow": "auto"
                 });
 
                 // 设置段落样式
@@ -1612,6 +1634,8 @@ function LayerShow() {
                 info_box_lineHeight: showKind=2时有效，内容盒行间距。默认"30px"
                 info_box_use_JRoll: showKind=2时有效，内容盒使用JRoll滚动（建议移动端使用，web端不用。IE7、8不兼容）如使用，则需要依赖或引用jroll.js。默认true
                 JRoll_obj: JRoll对象。不使用JRoll做内容盒滚动，可不传。
+                info_bottom_fixed_content: showKind=2时有效，底部固定层内容。无默认。
+                info_bottom_fixed_height: showKind=2 && info_bottom_fixed_content!="" 时有效，高度，单位px。默认40
                 Pics_close_show: true/false。显示关闭按钮。默认true
                 Pics_close_path: 关闭按钮图片路径。默认/inc/LayerShow_close.png。
                 callback_before: 弹层前回调。如显示loading层。无默认
@@ -1642,6 +1666,7 @@ function LayerShow() {
                 info_box_fontColor: "#333",
                 info_box_lineHeight: "30px",
                 info_box_use_JRoll: true,
+                info_bottom_fixed_height: 40,
                 Pics_close_show: true,
                 Pics_close_path: "/inc/LayerShow_close.png"
             };
@@ -1805,12 +1830,16 @@ function LayerShow() {
             } else if (_this.Paras.showKind == 2) {
 
                 // 获得窗口尺寸
-                _this.window_width_px = $(window).width();
-                _this.window_height_px = $(window).height();
+                // _this.window_width_px = $(window).width();
+                // _this.window_height_px = $(window).height();
 
                 // 设置盒内容
                 if (_this.Paras.info_content)
                     _this.dom_info_p.html(_this.Paras.info_content);
+
+                // 设置底部fixed盒内容
+                if (_this.Paras.info_bottom_fixed_content)
+                    _this.dom_info_bottom_fixed_box.html(_this.Paras.info_bottom_fixed_content);
 
                 // 设置弹层宽高和位置
                 _this.resize.apply(_this);
@@ -1820,11 +1849,16 @@ function LayerShow() {
                 _this.dom_info_box.fadeIn(200, function() {
                     // 设置JRoll滚动
                     if (_this.Paras.info_box_use_JRoll && _this.Paras.JRoll_obj) {
-                        _this.jroll_obj = new _this.Paras.JRoll_obj("#info_wrapper");
+                        _this.jroll_obj = new _this.Paras.JRoll_obj(_this.dom_info_jroll_box[0]);
+                        _this.dom_info_jroll_box.css({
+                            "overflow": "hidden"
+                        });
                     }
+
+                    // console.log(_this.Paras.info_box_use_JRoll, _this.jroll_obj);
                     // 成功回调
                     if (_this.Paras.callback_success)
-                        _this.Paras.callback_success();
+                        _this.Paras.callback_success(_this.jroll_obj);
                 });
                 _this.dom_close_box.fadeIn(200);
 
@@ -1855,12 +1889,14 @@ function LayerShow() {
                 });
             } else if (_this.Paras.showKind == 2) {
 
+                var info_wrapper_html = _this.dom_info_box.html();
+
                 if (_this.Paras.info_box_use_JRoll) {
                     // 销毁jroll对象
                     _this.jroll_obj.destroy();
 
-                    // 清空段落中间层的style
-                    _this.dom_info_p_box.removeAttr("style");
+                    // 清空段落的style
+                    _this.dom_info_p.removeAttr("style");
                 }
 
                 // 内容盒回到顶端
@@ -1875,7 +1911,7 @@ function LayerShow() {
                     if (reShow) {
                         _this.show.apply(_this, [_this.Paras]);
                     } else if (_this.Paras.callback_close)
-                        _this.Paras.callback_close();
+                        _this.Paras.callback_close(info_wrapper_html);
                 });
             }
         },
@@ -2019,15 +2055,14 @@ if (typeof define === "function" && define.amd) {
     define('lib/LayerShow',[],function() {
         return LayerShow;
     });
-}
-;
+};
 /*
-	chat管理平台页js
-	高京
-	2017-05-26
-	that = {
-		servicer_form_layershow: 添加修改客服的表单弹层对象
-	}
+    chat管理平台页js
+    高京
+    2017-05-26
+    that = {
+        servicer_form_layershow: 添加修改客服的表单弹层对象
+    }
 */
 
 define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
@@ -2224,7 +2259,7 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                 // Pics_arrow_right: showKind = 1 时有效。 图片切换 右箭头图片路径。 默认 / inc / LayerShow_arrow_left.png。
                 // callback_image_click: showKind = 1 时有效。 图片点击回调： 1 - 关闭弹层 | 2 - 下一张图片 | function(li_obj) - 自定义方法。 默认 "1"
                 info_content: form_html,
-                info_box_width_per: parseInt(350 / $(window).width() * 100),
+                info_box_width_per: 80,
                 // info_box_height_per: showKind = 2 时有效， 内容盒高度百分比。 默认90
                 // info_box_radius: showKind = 2 时有效， 内容盒是否圆角。 默认true
                 // info_box_bg: showKind = 2 时有效， 内容盒背景。 默认 "#ffffff"
@@ -2234,6 +2269,8 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                 // info_box_lineHeight: showKind = 2 时有效， 内容盒行间距。 默认 "30px"
                 info_box_use_JRoll: false,
                 // JRoll_obj: JRoll对象。 不使用JRoll做内容盒滚动， 可不传。
+                info_bottom_fixed_content: "<input type=\"submit\" class=\"form_submit_button weui-btn weui-btn_plain-default\" style=\"height:50px;\" value=\"提 交\">",
+                info_bottom_fixed_height: 50,
                 // Pics_close_show: true / false。 显示关闭按钮。 默认true
                 // Pics_close_path: 关闭按钮图片路径。 默认 / inc / LayerShow_close.png。
                 // callback_before: 弹层前回调。 如显示loading层。 无默认
@@ -2253,13 +2290,19 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
             var that = this;
 
             // 监听头像点击
-            that.headimg_click_Lisetener.apply(that);
+            that.headimg_click_Listener.apply(that);
+
+            // 监听全部分类的点击
+            that.sort_checkall_Listener.apply(that);
+
+            // 监听分类点击
+            that.sort_li_click_Listener.apply(that);
 
             // 监听表单提交
             that.form_submit_Listener.apply(that);
         },
         // 监听头像点击
-        headimg_click_Lisetener: function() {
+        headimg_click_Listener: function() {
             // var that = this;
 
             $(".headimg_ul li").unbind().click(function() {
@@ -2267,14 +2310,61 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                 $(this).addClass("selected");
             });
         },
+        // 监听全部分类的点击
+        sort_checkall_Listener: function() {
+            var that = this;
+
+            var checkall = $(".mp_servicer_form ul.form_line_ul li.sort_li .checkall");
+            var sort_ul = $(".mp_servicer_form ul.form_line_ul .sort_ul");
+
+            // 获取ul高度并存于that
+            that.sort_ul_height_px = sort_ul.height();
+
+            // 给ul定高
+            sort_ul.css("height", that.sort_ul_height_px + "px");
+
+            // 监听点击
+            checkall.unbind().on("click", function() {
+                var checked = checkall[0].checked;
+                if (checked) {
+                    // sort_ul.css({
+                    //     height: 0
+                    // });
+                    sort_ul.find(".sort_b:not(.checked)").addClass("checked");
+                } else {
+                    // sort_ul.css({
+                    //     height: that.sort_ul_height_px + "px"
+                    // });
+                    sort_ul.find(".sort_b").removeClass("checked");
+                }
+            });
+        },
+        // 监听分类的点击
+        sort_li_click_Listener: function() {
+
+            var li = $(".mp_servicer_form ul.form_line_ul li.sort_li li.sort_b");
+
+            li.unbind().on("click", function() {
+                var _this = $(this);
+
+                _this.toggleClass("checked");
+            });
+        },
         // 监听表单提交
         form_submit_Listener: function() {
             var that = this;
+
+            // 监听表单提交
             $(".mp_servicer_form form").unbind().on("submit", function() {
 
                 // 表单提交验证
                 that.form_submit_check.apply(that, [$(this)]);
                 return false;
+            });
+
+            // 监听按钮点击，发起表单提交
+            $(".form_submit_button").unbind().on("click", function() {
+                $(".mp_servicer_form form").submit();
             });
         },
         // 表单提交验证
@@ -2284,7 +2374,8 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                 sname = form_obj.find("input.sname").val(),
                 nickname = form_obj.find("input.nickname").val(),
                 passwd = form_obj.find("input.passwd").val(),
-                headimg_li = form_obj.find(".selected");
+                headimg_li = form_obj.find(".headimg_ul .selected"),
+                sort_li = form_obj.find(".sort_ul .sort_b.checked");
 
             // 验证报错，空字符串为正确
             var error_str = "";
@@ -2310,12 +2401,20 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
 
             } else {
 
+                // 拼接sort
+                var sort = "";
+                $.each(sort_li, function(index, s) {
+                    sort += "<" + $(s).attr("Scid") + ">";
+                });
+
+                // 表单提交处理
                 that.form_submit_deal.apply(that, [form_obj, {
                     _id: _id,
                     sname: sname,
                     nickname: nickname,
                     passwd: passwd,
-                    headimg: headimg_li.find("img").attr("src")
+                    headimg: headimg_li.find("img").attr("src"),
+                    sort: sort
                 }]);
             }
         },
@@ -2410,7 +2509,6 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
 
     return chat_mp_index;
 });
-
 /*
     高京
     2017-06-10
@@ -2689,11 +2787,11 @@ define('app/chat_servicer',[
                         url: "/servicer/findChatByCid",
                         type: "post",
                         data: {
-                            cid: cid
+                            cid: cid.toString()
                         },
                         success: function(chat) {
 
-                            // console.dir(chat);
+                            console.dir(chat);
 
                             if (chat === "err") {
                                 console.log("err");

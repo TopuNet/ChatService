@@ -24,8 +24,8 @@ exports.client_title = "中企服 - 我的顾问";
 // 客服pc端title
 exports.servicer_pc_title = "中企服 - 顾问";
 
-exports.ImageDomain = "http://xcmp.topu.net"; //数据库中读取的图片的域名前缀 (测试环境)
-exports.host = "xcmp.topu.net"; //测试环境
+exports.ImageDomain = "http://mp.zhongqifu.com.cn"; //数据库中读取的图片的域名前缀 (测试环境)
+exports.host = "mp.zhongqifu.com.cn"; //测试环境
 exports.port = 80; //端口号
 
 // 根据cid拉取会员信息-姓名(昵称)、头像、性别
@@ -36,7 +36,6 @@ exports.getClientInfo = function(cid, query, callback) {
         if (err) {
             callback(err);
         } else {
-
             callback(null, result[0]);
         }
     };
@@ -53,7 +52,57 @@ exports.getClientInfo = function(cid, query, callback) {
         }
     }];
 
-    config.getDataFromRestFul(api_callback, Json_Select, query);
+    chat_config.getDataFromRestFul(api_callback, Json_Select, query);
+};
+
+// 拉取服务分类
+// @query: req.query
+exports.getSort = function(query, callback) {
+
+    var api_callback = function(err, result) {
+        if (err) {
+            callback(err);
+        } else {
+
+            callback(null, result);
+        }
+    };
+
+    var Json_Select = [{
+        "type": "Service_Classification",
+        "act": "Select_List",
+        "para": {
+            "params": {
+                "s_Alive": "1",
+                "s_Hot": "0",
+                "s_Keywords": "",
+                "s_Of_Scid": "",
+                "s_Order": "Of_Scid,Layer,Scid",
+                "s_Recommend": "0",
+                "s_Scid": "",
+                "s_Select_level_two": "1",
+                "s_Total_parameter": "Scid,Of_Scid,Of_Ctitle,Ctitle,Layer"
+            },
+            "pages": {
+                "p_c": "",
+                "p_First": "",
+                "p_inputHeight": "",
+                "p_Last": "",
+                "p_method": "",
+                "p_Next": "",
+                "p_Page": "",
+                "p_pageName": "",
+                "p_PageStyle": "",
+                "p_Pname": "",
+                "p_Previous": "",
+                "p_Ps": "",
+                "p_sk": "",
+                "p_Tp": ""
+            }
+        }
+    }];
+
+    chat_config.getDataFromRestFul(api_callback, Json_Select, query);
 };
 
 
@@ -90,7 +139,9 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
     query = func.transParameters(query, "");
 
     // 接口地址
-    var RestFul_url = "http://" + config.host + ":" + config.port + "/Handler/Handlers.ashx?" + query;
+    var RestFul_url = "http://" + chat_config.host + ":" + chat_config.port + "/Handler/Handlers.ashx?" + query;
+
+    // console.dir(RestFul_url);
 
     // 成功回调
     var finish_deal = function(err, result) {
@@ -147,8 +198,6 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
         };
 
         func.Request(opt, function(data) {
-
-            console.log("\n\nconfig", 123, "opt:\n", opt);
 
             var i = 0,
                 j = 0,
