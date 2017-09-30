@@ -137,7 +137,7 @@ router.get("/", function(req, res) {
                 // 根据cid+bid+sort查找会话，没有则创建
                 var find_chat = function(api_result_callback) {
                     // console.log("\n\nchat", 139, "cid:", cid, "\nbid:", bid, "\nsort", sort);
-                    collection_chats.find({ "cid": cid, "bid": bid, "sort": sort.toString() }).next(function(err, chat) {
+                    collection_chats.find({ "cid": cid, "bid": bid, "sort": eval("/<" + sort + ">/ig") }).next(function(err, chat) {
 
                         // console.log("\n\nchat", 142, "chat:\n", chat);
 
@@ -229,6 +229,23 @@ router.get("/", function(req, res) {
                                 });
                             };
 
+                            // 验证客户和客服间是否已有会话
+                            var validChatRepeat = function(servicer, _callback) {
+                                collection_chats.find({ "cid": cid, "sid": servicer._id }).next(function(err, chat) {
+                                    if (chat) {
+                                        collection_chats.updateOne({
+                                            "_id": mongo.ObjectID(chat._id)
+                                        }, {
+                                            $set: { "sort": chat.sort + "<" + sort + ">" }
+                                        }, function(err, result) {
+                                            api_result_callback(null, chat);
+                                        });
+                                    } else {
+                                        _callback(null, servicer);
+                                    }
+                                });
+                            };
+
                             // 拉取客户信息
                             var getClientInfo = function(servicer, _callback) {
                                 // _callback(null, servicer, client);
@@ -255,7 +272,7 @@ router.get("/", function(req, res) {
                                     "client": client,
                                     "bid": bid,
                                     "sid": servicer._id,
-                                    "sort": sort,
+                                    "sort": "<" + sort + ">",
                                     "servicer": {
                                         "nickname": servicer.nickname,
                                         "headimg": servicer.headimg
@@ -269,6 +286,7 @@ router.get("/", function(req, res) {
                             // 执行async
                             async.waterfall([
                                 appoint_servicer, // 指派客服
+                                validChatRepeat, // 验证客户和客服间是否已有会话
                                 getClientInfo, // 拉取客户信息
                                 add_chat // 添加会话
                             ], function(err, chat) {

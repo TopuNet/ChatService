@@ -1,7 +1,7 @@
 // default settings. fis3 release
 // fis.set('project.charset', 'utf8');
 // fis.set('project.fileType.text', 'htm');
-fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js', '/handle/*.js_bak']);
+fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js', '/handle/*.js_bak', '/**/.DS_Store', '/**/server.log', '/**/npm-debug.log']);
 fis.config.set('settings.optimizer.uglify-js', {
     mangle: false // 不混淆
 });
