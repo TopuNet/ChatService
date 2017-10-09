@@ -206,7 +206,24 @@ define([
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
+                // 更新未读消息状态
+                that.update_noRead_record.apply(that, [cid, sid]);
+
+                // 处理消息推送
                 that.send_message.apply(that, [kind, msg, cid, sid, rdate]);
+            });
+        },
+
+        // 更新客户端未读消息状态
+        update_noRead_record: function(cid, sid) {
+
+            $.ajax({
+                url: "/update_noRead_record_client",
+                type: "post",
+                data: {
+                    cid: cid,
+                    sid: sid
+                }
             });
         },
 

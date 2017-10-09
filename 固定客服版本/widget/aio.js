@@ -927,7 +927,24 @@ define('app/chat',[
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
+                // 更新未读消息状态
+                that.update_noRead_record.apply(that, [cid, sid]);
+
+                // 处理消息推送
                 that.send_message.apply(that, [kind, msg, cid, sid, rdate]);
+            });
+        },
+
+        // 更新客户端未读消息状态
+        update_noRead_record: function(cid, sid) {
+
+            $.ajax({
+                url: "/update_noRead_record_client",
+                type: "post",
+                data: {
+                    cid: cid,
+                    sid: sid
+                }
             });
         },
 
@@ -2791,8 +2808,6 @@ define('app/chat_servicer',[
                         },
                         success: function(chat) {
 
-                            console.dir(chat);
-
                             if (chat === "err") {
                                 console.log("err");
                                 return;
@@ -2824,11 +2839,32 @@ define('app/chat_servicer',[
                     if (chat_line.parent().find("li").index(chat_line) !== 0)
                         chat_line.prependTo(".chat_list");
 
+                    console.dir(chat_line.length);
+
                     if (chat_line.hasClass("now")) { // 是当前对话框，向右侧增加会话记录
+
+                        // 更新客服端未读消息状态
+                        that.update_noRead_record.apply(that, [cid]);
+
+                        // 增加消息
                         that.send_message.apply(that, [3, msg, cid, sid, rdate]);
                     } else {
                         chat_line.addClass("new");
                     }
+                }
+            });
+        },
+
+        // 更新客服端未读消息状态
+        update_noRead_record: function(cid) {
+
+            console.log(cid + ":here");
+
+            $.ajax({
+                url: "/servicer/update_noRead_record_servicer",
+                type: "post",
+                data: {
+                    cid: cid
                 }
             });
         },

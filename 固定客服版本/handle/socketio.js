@@ -196,11 +196,25 @@ var socketio = function() {
                 var db;
                 var rdate = new Date(_rdate);
 
-                // 更新chats表的last_time和last_content
+                // 更新chats表的has_noRead_record、last_time和last_content
                 var update_last_time = function(_db, callback) {
                     db = _db;
 
                     var collection_chats = db.collection("chats");
+
+                    var has_noRead_record_client,
+                        has_noRead_record_servicer;
+
+                    if (sender == "c") {
+                        has_noRead_record_client = false;
+                        has_noRead_record_servicer = true;
+                    } else if (sender == "s") {
+                        has_noRead_record_client = true;
+                        has_noRead_record_servicer = false;
+                    } else {
+                        has_noRead_record_client = false;
+                        has_noRead_record_servicer = false;
+                    }
 
                     // 更新last_timestamp
                     collection_chats.updateOne({
@@ -208,6 +222,8 @@ var socketio = function() {
                         sid: mongo.ObjectID(sid)
                     }, {
                         $set: {
+                            has_noRead_record_client: has_noRead_record_client,
+                            has_noRead_record_servicer: has_noRead_record_servicer,
                             last_timestamp: rdate.getTime(),
                             last_content: msg
                         }

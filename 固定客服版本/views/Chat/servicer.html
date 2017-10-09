@@ -15,7 +15,7 @@
             <ul class="chat_list">
                 <% if(chats.length){ %>
                     <% chats.forEach(function(chat,index){ %>
-                        <li class="chat_line" cid="<%=chat.cid%>">
+                        <li class="chat_line<% if(chat.has_noRead_record_servicer){ %> new<% } %>" cid="<%=chat.cid%>">
                             <% // class可选：now-当前对话；new-有新消息 %>
                                 <img src="<%=chat.client.headimg%>" />
                                 <div class="new_flag"></div>

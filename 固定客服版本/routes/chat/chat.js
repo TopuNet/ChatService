@@ -1,11 +1,11 @@
-/*
-    chat页路由
+/* chat页路由
     高京
     2017-05-04
 */
 
 var router = require("express").Router(),
     async = require("async"),
+    func = require("../../handle/functions"),
     mongo = require("../../handle/mongodb"),
     chat_config = require("../../handle/chat_config"),
     getRecord_handler = require("../../handle/getRecords"),
@@ -59,6 +59,7 @@ var check_Servicer_Token = function(callback) {
     });
 };
 
+// 会话页
 router.get("/", function(req, res) {
     // var fs = require("fs");
 
@@ -237,7 +238,7 @@ router.get("/", function(req, res) {
                                             "_id": mongo.ObjectID(chat._id)
                                         }, {
                                             $set: { "sort": chat.sort + "<" + sort + ">" }
-                                        }, function(err, result) {
+                                        }, function() {
                                             api_result_callback(null, chat);
                                         });
                                     } else {
@@ -276,7 +277,9 @@ router.get("/", function(req, res) {
                                     "servicer": {
                                         "nickname": servicer.nickname,
                                         "headimg": servicer.headimg
-                                    }
+                                    },
+                                    "has_noRead_record_client": false,
+                                    "has_noRead_record_servicer": false
                                 };
                                 collection_chats.insertOne(chat, function(err) {
                                     _callback(err, chat);
@@ -327,10 +330,25 @@ router.get("/", function(req, res) {
                     }
                 };
 
+                var clear_client_record = function(chat, api_result_callback) {
+                    if (chat) {
+                        collection_chats.updateOne({
+                            "_id": chat._id
+                        }, {
+                            $set: { "has_noRead_record_client": false }
+                        }, function() {
+                            chat.has_noRead_record_client = false;
+                            api_result_callback(null, chat);
+                        });
+                    }
+
+                };
+
                 // async
                 async.waterfall([
                     find_chat,
-                    check_servicer
+                    check_servicer,
+                    clear_client_record,
                 ], function(err, chat) {
                     callback(err, chat);
                 });
@@ -405,8 +423,49 @@ router.get("/", function(req, res) {
 
 });
 
+// 获得更多历史记录
 router.post("/getMoreRecords", function(req, res) {
     getRecord_handler.getRecords(req, res);
+});
+
+// 更新客户端未读消息状态
+router.post("/update_noRead_record_client", function(req) {
+    var cid, sid;
+
+    // 获得参数
+    var getParameters = function(callback) {
+        cid = func.filterNoNum(req.body.cid);
+        sid = req.body.sid.toString();
+
+        callback(null);
+    };
+
+    // 执行更新
+    var deal_update = function(db, callback) {
+
+        var collection_chats = db.collection("chats");
+
+        collection_chats.updateOne({
+            "cid": cid,
+            "sid": mongo.ObjectID(sid)
+        }, {
+            $set: {
+                has_noRead_record_client: false
+            }
+        }, function(err) {
+            callback(err);
+        });
+    };
+
+    async.waterfall([
+        getParameters,
+        mongo.connect_async,
+        deal_update
+    ], function(err) {
+        if (err) {
+            console.log("\n\nchat", 463, "err:\n", err);
+        }
+    });
 });
 
 /*

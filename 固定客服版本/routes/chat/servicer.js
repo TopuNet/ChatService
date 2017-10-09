@@ -271,6 +271,7 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
 
     // console.log("\n\nservicer", 195, "here");
 
+    var db;
     var cid;
 
     // 获得表单数据
@@ -282,16 +283,17 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
     // 查询
     var getChats = function(_db, callback) {
 
+        db = _db;
+
         // console.log("\n\servicer", 285, "\ncid:", cid, "\nreq.mw.login_:\n", req.mw.login_servicer._id);
 
-        var collection_chats = _db.collection("chats");
+        var collection_chats = db.collection("chats");
         collection_chats.find({
             cid: cid,
             sid: mongo.ObjectID(req.mw.login_servicer._id)
         }).sort([
             ["last_timestamp", -1]
         ]).next(function(err, chat) {
-            _db.close();
             // console.log("\n\servicer", 294, "\nerr:", err, "\nchat:\n", chat);
             if (err)
                 callback(err);
@@ -301,8 +303,6 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
                 callback(null, chat);
         });
     };
-
-    // 
 
     // 执行async
     async.waterfall([
@@ -324,7 +324,88 @@ router.post("/findChatByCid", mw_check_login_status, function(req, res) {
 
 // 根据cid和sid获得会话记录（sid来源于登录验证），并返回html代码
 router.post("/getRecords", mw_check_login_status, function(req, res) {
-    getRecord_handle.getRecords(req, res, req.mw.login_servicer._id);
+
+    // 更新未读消息状态
+    var update_noRead_record_servicer = function(db, callback) {
+
+        var collection_chats = db.collection("chats");
+
+        // console.log("\n\nservicer", 333, "cid:", func.filterNoNum(req.body.cid), "\nsid:", req.mw.login_servicer._id.toString());
+
+        collection_chats.updateOne({
+            cid: func.filterNoNum(req.body.cid),
+            sid: mongo.ObjectID(req.mw.login_servicer._id.toString())
+        }, {
+            $set: {
+                has_noRead_record_servicer: false
+            }
+        }, function(err, result) {
+
+            // console.log("\n\nservicer", 344, "err:", err, "\nresult:\n",result);
+
+            db.close();
+
+            callback(null);
+
+        });
+    };
+
+    // 获得记录
+    var getRecords = function(callback) {
+
+        getRecord_handle.getRecords(req, res, req.mw.login_servicer._id);
+
+        callback(null);
+    };
+
+    async.waterfall([
+        mongo.connect_async,
+        update_noRead_record_servicer,
+        getRecords
+    ]);
+
+});
+
+// 更新客服端未读消息状态
+router.post("/update_noRead_record_servicer", mw_check_login_status, function(req) {
+    var cid;
+
+    // 获得参数
+    var getParameters = function(callback) {
+        cid = func.filterNoNum(req.body.cid);
+        sid = req.mw.login_servicer._id.toString();
+
+        callback(null);
+    };
+
+    // 执行更新
+    var deal_update = function(db, callback) {
+
+        var collection_chats = db.collection("chats");
+
+        console.log("\n\nservicer", 386, "cid:", cid, "\nsid:", sid);
+
+        collection_chats.updateOne({
+            "cid": cid,
+            "sid": mongo.ObjectID(sid)
+        }, {
+            $set: {
+                has_noRead_record_servicer: false
+            }
+        }, function(err) {
+            callback(err);
+        });
+    };
+
+    async.waterfall([
+        getParameters,
+        mongo.connect_async,
+        deal_update
+    ], function(err) {
+        if (err) {
+            console.log("\n\nservicer", 404, "err:\n", err);
+        }
+    });
 });
 
 module.exports = router;
