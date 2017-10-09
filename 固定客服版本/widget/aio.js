@@ -2839,7 +2839,7 @@ define('app/chat_servicer',[
                     if (chat_line.parent().find("li").index(chat_line) !== 0)
                         chat_line.prependTo(".chat_list");
 
-                    console.dir(chat_line.length);
+                    // console.dir(chat_line.length);
 
                     if (chat_line.hasClass("now")) { // 是当前对话框，向右侧增加会话记录
 
@@ -2857,8 +2857,6 @@ define('app/chat_servicer',[
 
         // 更新客服端未读消息状态
         update_noRead_record: function(cid) {
-
-            console.log(cid + ":here");
 
             $.ajax({
                 url: "/servicer/update_noRead_record_servicer",

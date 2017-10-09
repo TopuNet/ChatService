@@ -383,8 +383,6 @@ router.post("/update_noRead_record_servicer", mw_check_login_status, function(re
 
         var collection_chats = db.collection("chats");
 
-        console.log("\n\nservicer", 386, "cid:", cid, "\nsid:", sid);
-
         collection_chats.updateOne({
             "cid": cid,
             "sid": mongo.ObjectID(sid)
