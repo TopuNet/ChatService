@@ -2,7 +2,9 @@
 <html lang="en">
 
 <head>
-    <title><%=servicer_pc_title%></title>
+    <title>
+        <%=servicer_pc_title%>
+    </title>
     <% include head.html %>
         <link href="/css/style.css" rel="stylesheet" type="text/css" />
         <link href="/inc/weui.min.css" rel="stylesheet" type="text/css" />
@@ -12,31 +14,7 @@
     <div class="wrapper">
         <div class="wrapper_cell wrapper_left">
             <div class="cell_title">会话</div>
-            <ul class="chat_list">
-                <% if(chats.length){ %>
-                    <% chats.forEach(function(chat,index){ %>
-                        <li class="chat_line<% if(chat.has_noRead_record_servicer){ %> new<% } %>" cid="<%=chat.cid%>">
-                            <% // class可选：now-当前对话；new-有新消息 %>
-                                <img src="<%=chat.client.headimg%>" />
-                                <div class="new_flag"></div>
-                                <div class="span_group">
-                                    <span class="nickname"><%=chat.client.nickname%></span>
-                                    <span class="last_time"><%=formatTimeStamp(chat.last_time)%></span>
-                                    <span class="last_content"><%-chat.last_content%></span>
-                                </div>
-                        </li>
-                        <% }); %>
-                            <% } %>
-                                <li class="chat_line template">
-                                    <img src="<% //头像路径 %>" />
-                                    <div class="new_flag"></div>
-                                    <div class="span_group">
-                                        <span class="nickname">昵称</span>
-                                        <span class="last_time"><%=formatTimeStamp("最后消息的时间戳")%></span>
-                                        <span class="last_content">消息记录</span>
-                                    </div>
-                                </li>
-            </ul>
+            <% include comm_chat_list_template.html %>
         </div>
         <div class="wrapper_cell wrapper_right">
             <div class="cell_title">

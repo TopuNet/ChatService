@@ -144,8 +144,8 @@ app.use(express.static(path.join(__dirname, ''), {
 }));
 
 // 客户会话
-var index = require('./routes/chat/chat.js');
-app.use('/', index);
+var chat = require('./routes/chat/chat.js');
+app.use('/', chat);
 
 // 商家/平台 管理
 var mp = require('./routes/chat/mp.js');
@@ -154,6 +154,10 @@ app.use('/mp', mp);
 // 客服会话
 var servicer = require('./routes/chat/servicer.js');
 app.use('/servicer', servicer);
+
+// api
+var api = require('./routes/chat/api.js');
+app.use('/api', api);
 
 // 404 || 500
 var p404 = require('./routes/404.js');

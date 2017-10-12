@@ -41,7 +41,7 @@ define([
         left_chatLine_click_Listener: function() {
             var that = this;
 
-            $(".chat_list .chat_line").unbind("click").on("click", function() {
+            $(".comm_chat_list_template .chat_line").unbind("click").on("click", function() {
                 var chat_line = $(this); // 点击行
                 var talk_list = $("ul.talk_list"); // 右侧消息列表
                 var content_fixed = $(".content_fixed");
@@ -80,7 +80,7 @@ define([
             $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
                 e.preventDefault();
 
-                that.getRecords_ajax.apply(that, [$(".chat_list .chat_line.now"), "top"]);
+                that.getRecords_ajax.apply(that, [$(".comm_chat_list_template .chat_line.now"), "top"]);
 
             });
         },
@@ -183,7 +183,7 @@ define([
                 if (send) {
                     var kind = 2,
                         msg = $(this).val(),
-                        cid = $(".chat_list .chat_line.now").attr("cid"),
+                        cid = $(".comm_chat_list_template .chat_line.now").attr("cid"),
                         sid = Base_meta.sid;
 
                     if (msg.trim() === "") {
@@ -212,9 +212,8 @@ define([
         socket_connect_success: function() {
             var that = this;
             that.socket.on("connect_success", function() {
-                // $(".footer_button").css("display", "block");
 
-                // 向服务器端socket灌注属性
+                // 加入room
                 var changeData = {
                     kind: 2, // 记录此socket来源 1-客户端 2-客服端
                     cid: 0, // 客户id/token
@@ -236,6 +235,11 @@ define([
 
             that.socket.on("newClient_connected", function(cid) {
 
+                // console.log(238, "here");
+
+                if (cid === 0)
+                    return;
+
                 that.send_join_room.apply(that, [{
 
                     kind: 2, // 记录此socket来源 1-客户端 2-客服端
@@ -245,13 +249,17 @@ define([
             });
         },
 
-        // 向服务器端socket灌注属性
-        // changeData = {
-        //             kind: 2, // 记录此socket来源 1-客户端 2-客服端
-        //             cid: 0, // 客户id/token
-        //             sid: Base_meta.sid // 客服_id
-        //         };
+        /*
+            加入room
+            @changeData : {
+                kind: // 记录此socket来源 1-客户端 2-客服端,
+                cid: // 客户id，0为全部
+                sid: // 客服id，多个逗号分隔
+            }
+        */
         send_join_room: function(changeData) {
+            // console.log(258);
+            // console.dir(changeData);
             var that = this;
             that.socket.emit("join_room", changeData);
         },
@@ -262,7 +270,7 @@ define([
 
             that.socket.on("send_message", function(kind, msg, cid, sid, rdate) {
 
-                // console.log("here");
+                // console.log(269, "here");
 
                 // 验证消息发送者是否为当前对话框
                 var chat_line = $(".chat_line[cid=" + cid + "]");
@@ -280,6 +288,8 @@ define([
                         },
                         success: function(chat) {
 
+                            // console.dir(chat);
+
                             if (chat === "err") {
                                 console.log("err");
                                 return;
@@ -295,7 +305,7 @@ define([
                             chat_template.find(".nickname").text(chat.client.nickname);
                             chat_template.find(".last_time").text($func.dateFormat_wx(last_time).toLocaleString());
                             chat_template.find(".last_content").text(chat.last_content);
-                            chat_template.prependTo(".chat_list");
+                            chat_template.prependTo(".comm_chat_list_template");
 
                             // 监听左侧会话列表
                             that.left_chatLine_click_Listener.apply(that);
@@ -309,7 +319,7 @@ define([
 
                     // 不在顶部，则移动至顶部
                     if (chat_line.parent().find("li").index(chat_line) !== 0)
-                        chat_line.prependTo(".chat_list");
+                        chat_line.prependTo(".comm_chat_list_template");
 
                     // console.dir(chat_line.length);
 
@@ -364,11 +374,11 @@ define([
                 that.socket.emit("send_message", msg, "s", cid, sid, date);
 
                 // 更新左侧记录
-                var chat_line = $(".chat_list .chat_line.now");
+                var chat_line = $(".comm_chat_list_template .chat_line.now");
                 chat_line.find(".last_time").text($func.dateFormat_wx(date));
                 chat_line.find(".last_content").html(msg);
-                if (chat_line.parent().find(".chat_list").index(chat_line) !== 0)
-                    chat_line.prependTo(".chat_list");
+                if (chat_line.parent().find(".comm_chat_list_template").index(chat_line) !== 0)
+                    chat_line.prependTo(".comm_chat_list_template");
             }
 
             var li;
@@ -406,8 +416,8 @@ define([
             if (kind == 2) {
                 li.find("img").attr("src", Base_meta.headimg);
             } else if (kind == 3) {
-                li.find(".name").text($(".chat_list .chat_line.now .nickname").text());
-                li.find("img").attr("src", $(".chat_list .chat_line.now img").attr("src"));
+                li.find(".name").text($(".comm_chat_list_template .chat_line.now .nickname").text());
+                li.find("img").attr("src", $(".comm_chat_list_template .chat_line.now img").attr("src"));
             }
 
             // 装载li

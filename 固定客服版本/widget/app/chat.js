@@ -154,6 +154,9 @@ define([
 
                 // 接收socket推送消息
                 that.socket_send_message.apply(that);
+
+                // 监听返回按钮
+                that.back_button_Listener.apply(that);
             }
         },
 
@@ -175,9 +178,12 @@ define([
         socket_connect_success: function() {
             var that = this;
             that.socket.on("connect_success", function() {
+
+                // console.log("here");
+
                 $(".footer_button").css("display", "block");
 
-                // 向服务器端socket灌注属性
+                // 加入room
                 var changeData = {
                     kind: Base_meta.kind, // 记录此socket来源 1-客户端 2-客服端
                     cid: Base_meta.cid, // 客户id/token
@@ -303,7 +309,15 @@ define([
             }
         },
 
-        // 向服务器端socket灌注属性
+        // 加入room
+        /*
+            
+            @changeData : {
+                kind: // 记录此socket来源 1-客户端 2-客服端,
+                cid: // 客户id，0为全部
+                sid: // 客服id，多个逗号分隔
+            }
+        */
         send_join_room: function(changeData) {
             var that = this;
             // console.log(changeData);
@@ -352,6 +366,13 @@ define([
                     that.send_message.apply(that, [2, text, Base_meta.cid, Base_meta.sid]);
                     input.val("");
                 }
+            });
+        },
+
+        // 监听返回按钮
+        back_button_Listener: function() {
+            $(".footer_button .back").unbind().on("click", function() {
+                location.href = "/?cid=" + Base_meta.cid.toString();
             });
         }
     };

@@ -59,14 +59,119 @@ var check_Servicer_Token = function(callback) {
     });
 };
 
-// 会话页
+// 会话列表页
 router.get("/", function(req, res) {
+
+    var db;
+
+    // 地址栏
+    var cid; // 客户id
+
+    // 获得参数
+    var getParameters = function(callback) {
+        cid = func.filterNoNum(req.query.cid);
+
+        callback(null);
+    };
+
+    // 获得会话列表
+    var getChats = function(_db, callback) {
+
+        db = _db;
+
+        var collection_chats = db.collection("chats");
+
+        collection_chats.find({
+            "cid": cid
+        }).sort([
+            ["last_timestamp", -1]
+        ]).toArray(function(err, chats) {
+            if (err) {
+                console.log("\n\nchat", 90, "err:\n", err);
+                callback(err);
+            } else {
+                // console.log("\n\nchat",93,"chats:\n",chats);
+                callback(null, chats);
+            }
+        });
+    };
+
+    // 获得分类列表
+    var getSorts = function(chats, callback) {
+
+        chat_config.getSort(req.query, function(err, sort) {
+
+            if (err) {
+                console.log("\n\nchat", 109, "err:\n", err);
+                callback(err);
+            } else {
+
+                callback(null, chats, sort[0].list);
+            }
+        });
+    };
+
+    // 处理chats
+    var dealChats = function(chats, sorts, callback) {
+        if (chats.length) {
+            var sort,
+                sort_str;
+            chats.forEach(function(chat) {
+                sort = chat.sort.replace(/></ig, ",").replace(/[><]/ig, "").split(',');
+
+                chat.sort_first = sort[0];
+
+                // 获得对应的分类名称
+                sort_str = "";
+                sort.forEach(function(s) {
+                    sorts.some(function(ss) {
+                        if (ss.Scid == s) {
+                            if (sort_str !== "")
+                                sort_str += ",";
+                            sort_str += ss.Ctitle;
+                            return true;
+                        }
+                    });
+                });
+                chat.sort_str = sort_str;
+            });
+        }
+
+        callback(null, chats);
+    };
+
+    async.waterfall([
+        getParameters,
+        mongo.connect_async,
+        getChats,
+        getSorts,
+        dealChats
+    ], function(err, chats) {
+
+        db.close();
+
+        var render_para = {
+            err: err,
+            cid: cid,
+            comm_chat_list_template: chats,
+            comm_chat_list_template_source: "chat_list",
+            GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
+            client_title: chat_config.client_title
+        };
+
+        res.render("Chat/chat_list.html", render_para);
+    });
+
+});
+
+// 会话页
+router.get("/chat", function(req, res) {
     // var fs = require("fs");
 
     // [地址栏] 访问者种类: 1-客户 2-客服
     var kind = 1;
 
-    // [地址栏] 客户id/token
+    // [地址栏] 客户id
     var cid = "";
 
     // [地址栏] 商户id，-1为平台
@@ -417,7 +522,7 @@ router.get("/", function(req, res) {
             }
         };
         // console.log("\n\nchat", 340, "records\n", render_para.comm_talk_list_template.records);
-        res.render("Chat/index.html", render_para);
+        res.render("Chat/chat.html", render_para);
 
     });
 
@@ -466,6 +571,22 @@ router.post("/update_noRead_record_client", function(req) {
             console.log("\n\nchat", 463, "err:\n", err);
         }
     });
+});
+
+// 会话列表页 获得分类视图
+router.post("/chat/getSort", function(req, res) {
+
+    chat_config.getSort(req.query, function(err, sort) {
+
+        if (err) {
+            console.log("\n\nchat", 586, "err:\n", err);
+            res.send(err);
+        } else {
+            res.render("chat/chat_list_getSort.html", {
+                sort: sort[0].list
+            });
+        }
+    })
 });
 
 /*

@@ -43,7 +43,7 @@ var socketio = function() {
                 // 推送连接成功消息给socket客户端
                 socket.emit("connect_success");
 
-                // 监听客户端灌注socket属性的推送
+                // 监听客户端加入房间的推送
                 that.socket_send_join_room.apply(that, [socket]);
 
                 // 监听客户端发送内容
@@ -55,40 +55,29 @@ var socketio = function() {
         },
         // 监听断开事件
         socket_disconnect_Listener: function(socket) {
-            // var that = this;
+            var that = this;
 
             socket.on("disconnect", function() {
-                // if (socket.cid === 0) { // 客服socket
-                //     config.socket_global_2.some(function(socket, index) {
-                //         if (socket.sid == socket.sid) {
-                //             config.socket_global_2.splice(index, 1);
-                //             return true;
-                //         }
-                //     });
-                // } else { // 客户socket
-                //     config.socket_global_1.some(function(socket, index) {
-                //         if (socket.cid == socket.cid && socket.sid == socket.sid) {
-                //             config.socket_global_1.splice(index, 1);
-                //             return true;
-                //         }
-                //     });
-                // }
+                var rooms = Object.keys(that.io.sockets.adapter.rooms);
+
+                rooms.forEach(function(r) {
+                    socket.leave(r);
+                });
             });
         },
 
-        // 监听客户端灌注socket属性的推送
+        // 监听客户端加入房间的推送
         socket_send_join_room: function(socket) {
             var that = this;
+
+            /* 
+                @data: {
+                    kind: // 记录此socket来源 1-客户端 2-客服端,
+                    cid: // 客户id，0为全部
+                    sid: // 客服id，""为全部
+                } 
+            */
             socket.on("join_room", function(data) {
-
-                // console.log("\n\nsocketio", 82, "join_room_data:\n", data);
-
-                // console.log("\n\nsocket", 57, "data:\n", data);
-                // console.log("\n\nsocket", 58, "config.socket_global_2:\n", config.socket_global_2);
-                // console.log("\n\nsocket", 59, "data.kind:\n", data.kind);
-
-                // socket.cid = data.cid;
-                // socket.sid = data.sid;
 
                 var db;
 
@@ -100,20 +89,32 @@ var socketio = function() {
                     switch (data.kind.toString()) {
                         case "1":
 
-                            // console.log("\n\nsocket.io", 99, "that.io.sockets.adapter.rooms:\n", that.io.sockets.adapter.rooms);
-                            // 遍历所有rooms，找到第一个相同客服的房间
+                            // console.log("\n\nsocket.io", 101, "that.io.sockets.adapter.rooms:\n", that.io.sockets.adapter.rooms);
+
+                            // console.log("\n\n socketio", 103, "data.sid:", data.sid);
+
+                            // 遍历所有rooms，找到第一个相同客服的房间，发送消息
                             var rooms = Object.keys(that.io.sockets.adapter.rooms);
                             rooms.some(function(r) {
-                                if (r.match("^room(_\\w+)?_" + data.sid + "$")) {
+                                if (r.match("^room(_\\w+)?_(" + data.sid + ")$") &&
+                                    r != "room_" + data.cid + "_data.sid") {
 
-                                    // console.log("\n\nsocketio", 105, "room:", r);
+                                    // console.log("\n\nsocketio", 110, "room:", r);
 
                                     socket.to(r).emit("newClient_connected", data.cid);
                                     return true;
                                 }
                             });
 
-                            socket.join("room_" + data.cid + "_" + data.sid, function() {
+                            // 加入房间
+                            var sids = data.sid.split('|');
+                            var joins = [];
+                            sids.forEach(function(sid) {
+                                joins.push("room_" + data.cid + "_" + sid);
+                            });
+
+                            // console.log("\n\n socketio", 134, "joins:\n", joins);
+                            socket.join(joins, function() {
 
                                 callback(null);
                             });
@@ -171,7 +172,9 @@ var socketio = function() {
                         console.log("\n\nsocketio", 121, "err:\n", err);
                     }
 
-                    // console.log("\n\nsocketio", 137, "\nsocket.rooms:", socket.rooms);
+                    // console.log("\n\nsocket.io", 183, "that.io.sockets.adapter.rooms:\n", that.io.sockets.adapter.rooms);
+
+                    // console.log("\n\nsocketio", 185, "\nsocket.rooms:", socket.rooms);
 
                 });
             });
@@ -179,7 +182,7 @@ var socketio = function() {
 
         // 监听内容发送
         socket_send_message_Listener: function(socket) {
-            // var that = this;
+            var that = this;
 
             // sender"c"-客户消息 "s"-客服消息 "o"-系统消息
             socket.on("send_message", function(msg, sender, cid, sid, _rdate) {
@@ -196,7 +199,7 @@ var socketio = function() {
                 var db;
                 var rdate = new Date(_rdate);
 
-                // 更新chats表的has_noRead_record、last_time和last_content
+                // 更新chats表的has_noRead_record、last_timestamp、last_content和last_rdate
                 var update_last_time = function(_db, callback) {
                     db = _db;
 
@@ -225,7 +228,8 @@ var socketio = function() {
                             has_noRead_record_client: has_noRead_record_client,
                             has_noRead_record_servicer: has_noRead_record_servicer,
                             last_timestamp: rdate.getTime(),
-                            last_content: msg
+                            last_content: msg,
+                            last_rdate: rdate.toLocaleString()
                         }
                     }, function(err) {
                         if (err) {
@@ -266,10 +270,10 @@ var socketio = function() {
                 // 发送广播
                 var send_broadcast = function(callback) {
 
-                    // console.log("\n\nsocketio", 249, "rdate:\n", rdate, "\n", rdate.toLocaleString());
+                    // console.log("\n\nsocketio", 281, "rdate:\n", rdate, "\n", rdate.toLocaleString());
+                    // console.log("\n\nsocket.io", 282, "that.io.sockets.adapter.rooms:\n", that.io.sockets.adapter.rooms);
 
-                    // 客户上线状态
-                    socket.to("room_" + cid + "_" + sid).emit("send_message", sender == "o" ? 1 : 3, msg, cid, sid, rdate.toLocaleString());
+                    socket.to("room_" + cid + "_" + sid).emit("send_message", sender == "o" ? 1 : 3, msg, cid, sid, rdate.toLocaleString(), rdate);
 
                     callback(null);
                 };

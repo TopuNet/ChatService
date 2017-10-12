@@ -1,7 +1,7 @@
 // default settings. fis3 release
 // fis.set('project.charset', 'utf8');
 // fis.set('project.fileType.text', 'htm');
-fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js', '/handle/*.js_bak', '/**/.DS_Store', '/**/server.log', '/**/npm-debug.log']);
+fis.set('project.ignore', ['/fis-conf.js', '/web.config', '/iisnode/**', '/css/**.less', '/node_modules/**', '/app.js', '/handle/chat_config.js', '/handle/*.js_bak', '/**/.DS_Store', '/**/server.log', '/**/npm-debug.log', '/launch/www.js']);
 fis.config.set('settings.optimizer.uglify-js', {
     mangle: false // 不混淆
 });
@@ -20,7 +20,7 @@ fis.match('/widget/**', {
     release: false
 });
 
-fis.match('/widget/aio.js', {
+fis.match('/widget/aio*.js', {
     release: '/static$0',
     useHash: true
 });
@@ -35,22 +35,34 @@ fis.match('/images/**.png', {
 });
 // Global end
 
-// Publish start
-fis.media('pub').match('/inc/**', {
+// zqfdev start
+fis.media('zqfdev').match('/inc/**', {
+    url: '$0',
+    domain: 'http://chat-dev.zhongqifu.com.cn'
+});
+
+fis.media('zqfdev').match('{/css/**,/images/**,/widget/**}', {
+    url: '$0',
+    domain: 'http://chat-dev.zhongqifu.com.cn/static'
+});
+// zqfdev end
+
+// zqf start
+fis.media('zqf').match('/inc/**', {
     url: '$0',
     domain: 'http://chat.zhongqifu.com.cn'
 });
 
-fis.media('pub').match('{/css/**,/images/**,/widget/**}', {
+fis.media('zqf').match('{/css/**,/images/**,/widget/**}', {
     url: '$0',
     domain: 'http://chat.zhongqifu.com.cn/static'
 });
 
-fis.media('pub').match('/widget/**.js', {
+fis.media('zqf').match('/widget/**.js', {
     optimizer: fis.plugin('uglify-js')
 });
 
-fis.media('pub').match('/css/**.css', {
+fis.media('zqf').match('/css/**.css', {
     optimizer: fis.plugin('clean-css')
 });
-// Publish end
+// zqf end

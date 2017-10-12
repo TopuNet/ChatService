@@ -1,4 +1,96 @@
 @import "common.less";
+
+// 通用 - 底部占位行
+div.fixed_space {
+    // height: 7vh;
+    height: 12vw;
+}
+
+// 通用 - 底部按钮
+div.footer_button {
+    display: none; // 先隐藏，连接成功后再显示
+    position: fixed;
+    width: 100vw; // height: 7vh;
+    height: 12vw;
+    left: 0;
+    bottom: 0;
+    background: #f1f1f1;
+    border-top: solid 1px #e4e4e4;
+
+    /* 返回按钮 */
+    .back {
+        float: left;
+        width: 7vw;
+        height: 7vw;
+        margin: 1.5vh 0 0 2vw;
+        background: url("/images/button_back.png") no-repeat center center/5vw;
+        border: solid 0px #707070;
+        .border-radius(2.5vw);
+    }
+
+    /* 静音按钮 */
+    .mute {
+        float: left;
+        width: 7vw;
+        height: 7vw;
+        margin: 1.5vh 0 0 2vw;
+        background: url("/images/button_mute_yes.png") no-repeat center center/5vw;
+        border: solid 0px #707070;
+        .border-radius(2.5vw);
+
+        &.cancel {
+            background-image: url("/images/button_mute_no.png")!important;
+        }
+    }
+
+    /* 文字框 */
+    .message_content {
+        float: left;
+        width: 66vw;
+        line-height: 2.3;
+        margin: 1vh 0 0 2vw;
+        padding: 0 1vw;
+        border: solid 1px #ddd;
+        .border-radius(1.2vw);
+    }
+
+    /* 发送按钮 */
+    input.weui-btn_primary {
+        float: right;
+        margin: 1.1vh 2.5vw 0 0;
+    }
+}
+
+// 会话列表页
+body.chat_list {
+
+    /* 新消息气泡 */
+    .comm_chat_list_template .new_flag {
+        margin-top: -30px!important;
+    }
+
+    /* 分类 */
+    .form_sort_ul .sort_b {
+        margin: 1vh 0 1vh 2vw;
+    }
+
+    /* 底部按钮 */
+    div.footer_button {
+        display: block!important;
+        overflow: hidden;
+        input {
+            margin: 0!important;
+            line-height: 12vw!important;
+            .border-radius(0);
+            float: right;
+
+            &.weui-btn_primary {
+                width: 78vw;
+            }
+        }
+    }
+}
+
 // 对话窗口页
 body.Chat {
     background: #ebebeb; // 消息记录
@@ -6,33 +98,6 @@ body.Chat {
         overflow: hidden;
         text-align: center;
         padding-bottom: 1vh;
-    } // 占位行
-    div.fixed_space {
-        // height: 7vh;
-        height: 12vw;
-    } // 底部按钮
-    div.footer_button {
-        display: none; // 先隐藏，连接成功后再显示
-        position: fixed;
-        width: 100vw; // height: 7vh;
-        height: 12vw;
-        left: 0;
-        bottom: 0;
-        background: #f1f1f1;
-        border-top: solid 1px #e4e4e4; // 文字框
-        .message_content {
-            float: left;
-            width: 75vw;
-            line-height: 2.3;
-            margin: 1vh 0 0 2vw;
-            padding: 0 1vw;
-            border: solid 1px #ddd;
-            .border-radius(1.2vw);
-        } // 发送按钮
-        input.weui-btn_primary {
-            float: right;
-            margin: 1.1vh 2.5vw 0 0;
-        }
     }
 }
 
@@ -295,28 +360,35 @@ div.mp_servicer_form {
         } // 分类行
         &.sort_li {
             height: auto; // 行内ul，包裹所有一二级分类
-            .sort_ul {
-                // margin-top: 40px; // 一级分类
-                li.sort_a {
-                    font-weight: bold;
-                } // 二级分类
-                li.sort_b {
-                    .inline-block();
-                    height: 30px;
-                    line-height: 30px;
-                    margin-left: 10px;
-                    border: dashed 1px #ccc;
-                    padding: 0 5px;
-                    cursor: pointer; // 高亮样式
-                    // 悬停样式
-                    &:hover {
-                        border: solid 1px #ccc;
-                    } // 选中状态
-                    &.checked {
-                        border: solid 1px #3C8DC4;
-                    }
-                }
-            }
+        }
+    }
+}
+
+// 通用 - 表单中分类列表
+.form_sort_ul {
+    // margin-top: 40px; // 一级分类
+    li.sort_a {
+        font-weight: bold;
+    } // 二级分类
+    li.sort_b {
+        .inline-block();
+        height: 30px;
+        line-height: 30px;
+        margin-left: 10px;
+        border: dashed 1px #ccc;
+        padding: 0 5px;
+        cursor: pointer;
+
+        /* 选中状态 */
+        &.checked{
+            border:solid 1px #32af41;
+            background:#f5f5f5;
+        }
+
+        /* 已选状态（不能再点) */
+        &.isChecked {
+            border-color: #ccc;
+            color: #ccc;
         }
     }
 }
@@ -354,78 +426,6 @@ body.chat_servicer {
                     line-height: 49px;
                     border-bottom: solid 1px @gray_light;
                     text-align: center;
-                } // 会话列表{
-                .chat_list {
-                    // flex-grow: 1;
-                    .flex_set(1);
-                    overflow-y: scroll; // 会话行
-                    .chat_line {
-                        overflow: hidden;
-                        position: relative; // 新消息气泡用
-                        padding: 15px 10px;
-                        cursor: default; // padding-top: 15px;
-                        .flex(); // 新消息气泡
-                        .new_flag {
-                            background: #ea233b;
-                            display: none;
-                            width: 10px;
-                            height: 10px;
-                            position: absolute;
-                            left: 40px;
-                            .border-radius(5px);
-                            top: 50%;
-                            margin-top: -22px;
-                        } // 新消息行
-                        &.new {
-                            // 新消息气泡
-                            .new_flag {
-                                display: block;
-                            }
-                        } // 当前行
-                        &.now {
-                            background: @gray_light_so;
-                            background-position: 1px;
-                        } // 模板
-                        &.template {
-                            display: none;
-                        }
-                        &+.chat_line {
-                            border-top: dashed 1px @gray_light;
-                        } // 头像
-                        img {
-                            // width: 40px;
-                            height: 40px;
-                            .border-radius(25px); // flex-shrink: 0;
-                            .flex_set(0 0);
-                        } // 右侧span组
-                        .span_group {
-                            .flex_set(1 1); // flex-grow: 1;
-                            .flex();
-                            flex-wrap: wrap;
-                            span {
-                                .flex_set(1 0 85px); // flex-shrink: 0;
-                                // flex-grow: 1;
-                                font-size: 12px;
-                            } // 昵称
-                            .nickname {
-                                margin: 2px 0 0 10px;
-                            } // 时间
-                            .last_time {
-                                margin-top: 2px;
-                                text-align: right;
-                                color: @gray_dark;
-                            } // 内容
-                            .last_content {
-                                .flex_set(1 0 170px);
-                                height: 20px;
-                                line-height: 20px;
-                                margin-left: 10px;
-                                color: @gray_dark;
-                                overflow: hidden;
-                                word-break: break-all;
-                            }
-                        }
-                    }
                 }
             } // 右侧列
             &.wrapper_right {
@@ -614,6 +614,88 @@ body.chat_servicer {
                         outline: none;
                     }
                 }
+            }
+        }
+    }
+}
+
+// 通用 - 会话列表
+.comm_chat_list_template {
+    // flex-grow: 1;
+    .flex_set(1);
+    overflow-y: scroll; // 会话行
+    .chat_line {
+        overflow: hidden;
+        position: relative; // 新消息气泡用
+        padding: 15px 10px;
+        cursor: default; // padding-top: 15px;
+        .flex();
+
+        /* 新消息气泡 */
+        .new_flag {
+            background: #ea233b;
+            display: none;
+            width: 10px;
+            height: 10px;
+            position: absolute;
+            left: 40px;
+            .border-radius(5px);
+            top: 50%;
+            margin-top: -22px;
+        } // 新消息行
+        &.new {
+            // 新消息气泡
+            .new_flag {
+                display: block;
+            }
+        } // 当前行
+        &.now {
+            background: @gray_light_so;
+            background-position: 1px;
+        } // 模板
+        &.template {
+            display: none;
+        }
+        &+.chat_line {
+            border-top: dashed 1px @gray_light;
+        } // 头像
+        img {
+            width: 40px;
+            height: 40px;
+            .border-radius(20px);
+            /* flex-shrink: 0; */
+            .flex_set(0 0 40px);
+        } // 右侧span组
+        .span_group {
+            .flex_set(1 1); // flex-grow: 1;
+            .flex();
+            flex-wrap: wrap;
+            span {
+                .flex_set(1 0 85px); // flex-shrink: 0;
+                // flex-grow: 1;
+                font-size: 12px;
+            }
+            /* 昵称 */
+            .nickname {
+                margin: 2px 0 0 10px;
+            }
+            /* 时间 */
+            .last_time {
+                // .flex_set(1 0 85px);
+                margin-top: 2px;
+                text-align: right;
+                color: @gray_dark;
+            }
+            /* 分类 & 内容 */
+            .sort,
+            .last_content {
+                .flex_set(1 0 170px);
+                height: 20px;
+                line-height: 20px;
+                margin-left: 10px;
+                color: @gray_dark;
+                overflow: hidden;
+                word-break: break-all;
             }
         }
     }
