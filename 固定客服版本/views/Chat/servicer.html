@@ -11,6 +11,7 @@
 </head>
 
 <body class="chat_servicer">
+    <audio id="newMessageAudio" src="<%=GLOBAL_SOCKET_URL%>/inc/newMessage.mp3"></audio>
     <div class="wrapper">
         <div class="wrapper_cell wrapper_left">
             <div class="cell_title">会话</div>
@@ -18,7 +19,9 @@
         </div>
         <div class="wrapper_cell wrapper_right">
             <div class="cell_title">
-                <span class="nickname"></span>
+                <div class="buttons">
+                    <span class="mute"></span>
+                </div>
                 <span class="quit">退出</span>
             </div>
             <p class="loading">加载中，请稍候...</p>

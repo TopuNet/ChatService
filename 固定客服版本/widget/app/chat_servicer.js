@@ -13,8 +13,13 @@
 
 define([
     "lib/socket.io.min",
-    "lib/functions"
-], function($io, $func) {
+    "lib/functions",
+    "modules/footer_button_mute"
+], function(
+    $io,
+    $func,
+    $mute
+) {
     var chat_servicer = {
         RECORD_COUNT: 10,
         init: function() {
@@ -23,6 +28,11 @@ define([
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
+
+            // 静音按钮的状态判断和监听
+            $mute.init.apply($mute, [{
+                button_mute_selector: ".cell_title .buttons .mute"
+            }]);
 
             // 左侧会话列表的点击监听
             that.left_chatLine_click_Listener.apply(that);
@@ -368,6 +378,11 @@ define([
             date = new Date(date.toString().replace(/-/ig, "/"));
 
             // console.log(date);
+
+            // 声音提示
+            if (kind == 3 && $(".cell_title .buttons .mute").hasClass("cancel")) {
+                document.getElementById("newMessageAudio").play();
+            }
 
             if (kind == 2 && prepend !== true) {
                 // 将消息发往服务器

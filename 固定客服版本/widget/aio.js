@@ -1850,6 +1850,81 @@ if (typeof define === "function" && define.amd) {
     functions.init();
 };
 /*
+    底部静音相关
+
+    $obj.init.apply($obj,[opt]);
+
+    opt = {
+        button_mute_selector: 静音按钮选择器，默认 ".footer_button .mute"
+    }
+
+    that = {
+        button_mute: 静音按钮对象
+    }
+
+*/
+
+define('modules/footer_button_mute',[],function() {
+    var footer_button_mute = {
+
+        // 初始化
+        init: function(opt) {
+            var that = this;
+
+            that.opt = that.deal_opt.apply(that, [opt]);
+
+            that.button_mute = $(that.opt.button_mute_selector);
+
+            if (that.button_mute.length > 0) {
+                that.judge.apply(that);
+                that.Listener.apply(that);
+            }
+        },
+
+        // 处理opt并返回
+        deal_opt: function(opt) {
+            var that = this;
+
+            var opt_default = {
+                button_mute_selector: ".footer_button .mute"
+            };
+
+            return $.extend(opt_default, opt);
+        },
+
+        // 判断localStorage中存储的静音状态，并修改底部按钮样式
+        judge: function() {
+            var that = this;
+
+            localStorage.chat_service_gj_mute = localStorage.chat_service_gj_mute || "yes";
+
+            if (localStorage.chat_service_gj_mute == "no") {
+                that.button_mute.addClass("cancel");
+            } else {
+                that.button_mute.removeClass("cancel");
+            }
+        },
+
+        // 事件监听
+        Listener: function() {
+            var that = this;
+
+            that.button_mute.unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+
+                $(this).toggleClass("cancel");
+
+                if (localStorage.chat_service_gj_mute == "yes")
+                    localStorage.chat_service_gj_mute = "no";
+                else
+                    localStorage.chat_service_gj_mute = "yes";
+            });
+        }
+    };
+
+    return footer_button_mute;
+});
+/*
     高京
     2017-06-10
     客服会话
@@ -1864,8 +1939,13 @@ if (typeof define === "function" && define.amd) {
 
 define('app/chat_servicer',[
     "lib/socket.io.min",
-    "lib/functions"
-], function($io, $func) {
+    "lib/functions",
+    "modules/footer_button_mute"
+], function(
+    $io,
+    $func,
+    $mute
+) {
     var chat_servicer = {
         RECORD_COUNT: 10,
         init: function() {
@@ -1874,6 +1954,11 @@ define('app/chat_servicer',[
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
+
+            // 静音按钮的状态判断和监听
+            $mute.init.apply($mute, [{
+                button_mute_selector: ".cell_title .buttons .mute"
+            }]);
 
             // 左侧会话列表的点击监听
             that.left_chatLine_click_Listener.apply(that);
@@ -2219,6 +2304,11 @@ define('app/chat_servicer',[
             date = new Date(date.toString().replace(/-/ig, "/"));
 
             // console.log(date);
+
+            // 声音提示
+            if (kind == 3 && $(".cell_title .buttons .mute").hasClass("cancel")) {
+                document.getElementById("newMessageAudio").play();
+            }
 
             if (kind == 2 && prepend !== true) {
                 // 将消息发往服务器

@@ -12,6 +12,7 @@
 
 <body class="Chat">
     <% if(!err){ %>
+        <audio id="newMessage" src="<%=GLOBAL_SOCKET_URL%>/inc/newMessage.mp3"></audio>
         <div class="stoped_wrapper">
             <ul class="list">
                 <% include  comm_talk_list_template.html %>
@@ -21,12 +22,31 @@
         <div class="footer_button">
             <form>
                 <span class="back"></span>
+                <span class="mute"></span>
                 <input type="text" class="message_content">
                 <input type="submit" value="发送" class="weui-btn weui-btn_mini weui-btn_primary">
             </form>
         </div>
         <% } %>
             <% include ../weui.html %>
+                <script src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+                <script>
+
+                wx.config({
+                    debug: false,
+                    appId: '',
+                    timestamp: 1,
+                    nonceStr: '',
+                    signature: '',
+                    jsApiList: []
+                });
+
+                wx.ready(function() {
+                    var audio_newMessage = document.getElementById("newMessage");
+                    audio_newMessage.muted = true;
+                    audio_newMessage.play();
+                });
+                </script>
                 <script>
                 var Base_meta = {
                     "err": "<%=err%>",

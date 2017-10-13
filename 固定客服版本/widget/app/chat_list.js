@@ -142,12 +142,8 @@ define([
 
         // 静音按钮的监听
         mute_button_Listener: function() {
-
-            // 先判断静音按钮状态
-            $footer_button_mute.judge.apply($footer_button_mute);
-
-            // 再进行监听
-            $footer_button_mute.Listener.apply($footer_button_mute);
+            
+            $footer_button_mute.init.apply($footer_button_mute);
         },
 
         // 咨询其他服务按钮的点击处理

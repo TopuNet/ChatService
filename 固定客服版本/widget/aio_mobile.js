@@ -2576,13 +2576,45 @@ this.secure=null!=r.secure?r.secure:e.location&&"https:"===location.protocol,r.h
 /*
     底部静音相关
 
-    调用：$obj.action.apply($obj);
+    $obj.init.apply($obj,[opt]);
+
+    opt = {
+        button_mute_selector: 静音按钮选择器，默认 ".footer_button .mute"
+    }
+
+    that = {
+        button_mute: 静音按钮对象
+    }
+
 */
 
 define('modules/footer_button_mute',[],function() {
     var footer_button_mute = {
 
-        button_mute: $(".footer_button .mute"),
+        // 初始化
+        init: function(opt) {
+            var that = this;
+
+            that.opt = that.deal_opt.apply(that, [opt]);
+
+            that.button_mute = $(that.opt.button_mute_selector);
+
+            if (that.button_mute.length > 0) {
+                that.judge.apply(that);
+                that.Listener.apply(that);
+            }
+        },
+
+        // 处理opt并返回
+        deal_opt: function(opt) {
+            var that = this;
+
+            var opt_default = {
+                button_mute_selector: ".footer_button .mute"
+            };
+
+            return $.extend(opt_default, opt);
+        },
 
         // 判断localStorage中存储的静音状态，并修改底部按钮样式
         judge: function() {
@@ -2760,12 +2792,8 @@ define('app/chat_list',[
 
         // 静音按钮的监听
         mute_button_Listener: function() {
-
-            // 先判断静音按钮状态
-            $footer_button_mute.judge.apply($footer_button_mute);
-
-            // 再进行监听
-            $footer_button_mute.Listener.apply($footer_button_mute);
+            
+            $footer_button_mute.init.apply($footer_button_mute);
         },
 
         // 咨询其他服务按钮的点击处理
@@ -2896,12 +2924,19 @@ define('app/chat_list',[
 
 define('app/chat',[
     "lib/socket.io.min",
-    "lib/functions"
-], function($io, $func) {
+    "lib/functions",
+    "modules/footer_button_mute"
+], function(
+    $io,
+    $func,
+    $footer_button_mute
+) {
     var chat = {
         RECORD_COUNT: 10, // 一次读取的记录条数
         init: function() {
             var that = this;
+
+            $footer_button_mute.init.apply($footer_button_mute);
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
@@ -3126,6 +3161,13 @@ define('app/chat',[
             var date = new Date();
 
             // console.log(kind, msg, cid, sid, date.toLocaleString());
+
+            // 声音提示
+            if (kind == 3 && $(".footer_button .mute").hasClass("cancel")) {
+                var newMessage_audio = document.getElementById("newMessage");
+                newMessage_audio.muted = false;
+                newMessage_audio.play();
+            }
 
             // 将消息发往服务器
             if (kind == 2 && prepend !== true) { // 客户发送的消息

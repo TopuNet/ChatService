@@ -46,7 +46,7 @@ div.footer_button {
     /* 文字框 */
     .message_content {
         float: left;
-        width: 66vw;
+        width: 57vw;
         line-height: 2.3;
         margin: 1vh 0 0 2vw;
         padding: 0 1vw;
@@ -380,9 +380,9 @@ div.mp_servicer_form {
         cursor: pointer;
 
         /* 选中状态 */
-        &.checked{
-            border:solid 1px #32af41;
-            background:#f5f5f5;
+        &.checked {
+            border: solid 1px #32af41;
+            background: #f5f5f5;
         }
 
         /* 已选状态（不能再点) */
@@ -410,9 +410,11 @@ body.chat_servicer {
         .flex();
         width: 100vw;
         min-width: 600px;
-        border: solid 2px #666; // 列
+        border: solid 2px #666;
+        /* 列 */
         .wrapper_cell {
-            height: 100vh; // 左侧列
+            height: 100vh;
+            /* 左侧列 */
             &.wrapper_left {
                 min-width: 250px;
                 .flex_set(0 0 25vw); // flex-shrink: 0;
@@ -427,7 +429,8 @@ body.chat_servicer {
                     border-bottom: solid 1px @gray_light;
                     text-align: center;
                 }
-            } // 右侧列
+            }
+            /* 右侧列 */
             &.wrapper_right {
                 position: relative;
                 border-left: none;
@@ -435,7 +438,9 @@ body.chat_servicer {
                 .flex(); // display: flex;
                 // display: -webkit-flex;
                 .flex_column(); // flex-direction: column;
-                background: @gray_light_so; // 标题行
+                background: @gray_light_so;
+
+                /* 标题行 */
                 .cell_title {
                     .flex_set(0 0 50px); // flex-shrink: 0;
                     // height: 50px;
@@ -445,11 +450,30 @@ body.chat_servicer {
                         height: 50px;
                         line-height: 50px;
                         font-size: 16px;
-                    } // 昵称
-                    .nickname {
+                    }
+
+                    /* 按钮 */
+                    .buttons {
                         .flex_set(1 0 80%); // width: 80%;
-                        padding-left: 20px;
-                    } // 退出
+                        span {
+                            .inline-block();
+                            width: 20px;
+                            height: 50px;
+                            margin-left: 20px;
+                            background: url("") no-repeat center center/20px;
+                        }
+
+
+                        /* 静音 */
+                        .mute {
+                            background-image: url("/images/button_mute_yes.png");
+
+                            &.cancel {
+                                background-image: url("/images/button_mute_no.png");
+                            }
+                        }
+                    }
+                    /* 退出 */
                     .quit {
                         .flex_set(0 0 10%); // flex-shrink: 0;
                         width: 10%;

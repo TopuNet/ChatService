@@ -14,12 +14,19 @@
 
 define([
     "lib/socket.io.min",
-    "lib/functions"
-], function($io, $func) {
+    "lib/functions",
+    "modules/footer_button_mute"
+], function(
+    $io,
+    $func,
+    $footer_button_mute
+) {
     var chat = {
         RECORD_COUNT: 10, // 一次读取的记录条数
         init: function() {
             var that = this;
+
+            $footer_button_mute.init.apply($footer_button_mute);
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
@@ -244,6 +251,13 @@ define([
             var date = new Date();
 
             // console.log(kind, msg, cid, sid, date.toLocaleString());
+
+            // 声音提示
+            if (kind == 3 && $(".footer_button .mute").hasClass("cancel")) {
+                var newMessage_audio = document.getElementById("newMessage");
+                newMessage_audio.muted = false;
+                newMessage_audio.play();
+            }
 
             // 将消息发往服务器
             if (kind == 2 && prepend !== true) { // 客户发送的消息
