@@ -253,7 +253,7 @@ define([
             // console.log(kind, msg, cid, sid, date.toLocaleString());
 
             // 声音提示
-            if (kind == 3 && $(".footer_button .mute").hasClass("cancel")) {
+            if (kind == 3 && $(".footer_button .mute").hasClass("cancel") && prepend !== true) {
                 var newMessage_audio = document.getElementById("newMessage");
                 newMessage_audio.muted = false;
                 newMessage_audio.play();

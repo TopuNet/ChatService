@@ -3,34 +3,207 @@
     高京
     2017-05-26
     that = {
-        servicer_form_layershow: 添加修改客服的表单弹层对象
+        RECORD_COUNT: 消息每次加载数量,
+        servicer_form_layershow: 添加修改客服的表单弹层对象,
+        getRecords_opt = { // 获取消息记录的保留参数，获取更多历史消息时使用此值
+            cid: cid,
+            sid: sid
+        }
     }
 */
 
 define(["lib/LayerShow"], function($LayerShow) {
     var chat_mp_index = {
 
+        RECORD_COUNT: 10,
+
+        loadingToast: $(".loadingToast"),
+
         init: function() {
 
             var that = this;
 
-            // 监听添加按钮点击
-            that.button_add_click_Listener.apply(that);
+            // 监听顶部按钮点击
+            that.button_top_click_Listener.apply(that);
 
-            // 监听按钮点击
+            // 监听行内按钮点击
             that.button_inline_click_Listener.apply(that);
 
         },
-        // 监听添加按钮点击
-        button_add_click_Listener: function() {
+        // 监听顶部按钮点击
+        button_top_click_Listener: function() {
             var that = this;
 
-            // 监听添加按钮点击
-            $(".add_button").unbind().on("click", function() {
-                var callback = function(result) {
-                    that.showLayer_add_servicer.apply(that, [result]);
-                };
-                that.get_form.apply(that, [callback]);
+            $(".buttons li").unbind().on("click", function() {
+
+                var button_this = $(this);
+
+                if (button_this.hasClass("add_servicer")) {
+
+                    /* 添加新客服 */
+                    var callback = function(result) {
+                        that.showLayer_add_servicer.apply(that, [result]);
+                    };
+                    that.get_form.apply(that, [callback]);
+
+                } else if (button_this.hasClass("quit")) {
+
+                    /* 退出 */
+                    $.ajax({
+                        url: "/mp/quit",
+                        type: "post",
+                        beforeSend: function() {
+                            that.loadingToast.css("display", "block");
+                        },
+                        success: function() {
+                            location.href = "/mp/login";
+                        }
+                    });
+
+                } else if (button_this.hasClass("show_record")) {
+
+                    // 清空原先记录
+                    $(".wrapper_right li:not(.template,.more_record)").remove();
+
+                    /* 消息记录 */
+                    var cid = "";
+                    var sid = "";
+                    var start_count = 0;
+                    var scroll_direction = "bottom";
+                    that.getRecords_ajax.apply(that, [cid, sid, start_count, scroll_direction]);
+                }
+
+            });
+        },
+
+        // ajax获取消息记录
+        // @scroll_direction: "top" || "bottom"(默认)
+        getRecords_ajax: function(cid, sid, start_count, scroll_direction) {
+            var that = this;
+
+            var p_loading = $(".wrapper_right p.loading"); // 加载中提示盒
+
+            that.getRecords_opt = {
+                cid: cid,
+                sid: sid
+            };
+
+            // 获取消息记录
+            $.ajax({
+                url: "/mp/getRecords",
+                type: "post",
+                data: {
+                    cid: cid,
+                    sid: sid,
+                    start_count: start_count
+                },
+                beforeSend: function() {
+                    p_loading.css("display", "block");
+                },
+                success: function(result) {
+
+                    // console.dir(result);
+
+                    var c = 0;
+
+                    if (result.forEach) {
+
+                        result.forEach(function(r) {
+
+                            if (r.sender.toLowerCase() != "o")
+                                c++;
+
+                            that.send_message.apply(that, [r, scroll_direction]);
+
+                        });
+                    }
+
+                    // 隐藏“加载中”
+                    p_loading.css("display", "none");
+
+                    // 判断是否需要显示“查看更多历史消息”
+                    var more_record = $("ul.talk_list .more_record");
+                    if (c < that.RECORD_COUNT)
+                        more_record.removeClass("show");
+                    else {
+                        if (!more_record.hasClass("show"))
+                            more_record.addClass("show").css("cursor", "pointer");
+                        more_record.prependTo("ul.talk_list");
+                        that.show_more_records_Listener.apply(that);
+                    }
+                }
+            });
+        },
+
+        // 处理消息推送（包括本页自己发送的消息 和 socketio推送的消息）
+        // @r: 消息记录对象
+        // @scroll_direction: 加载完成后滚动方向 "top" | "bottom"(默认)
+        send_message: function(r, scroll_direction) {
+
+            scroll_direction = scroll_direction || "bottom";
+
+            // console.log("");
+            // console.log(kind, msg, cid, sid, date, prepend);
+            // console.log(date.toString().replace(/-/ig, "/"));
+
+            var li;
+            switch (r.sender.toLowerCase()) {
+                case "o":
+                    li = $("li.template.center").clone();
+                    break;
+                case "s":
+                    li = $("li.template.right").clone();
+                    break;
+                case "c":
+                    li = $("li.template.left").clone();
+                    break;
+            }
+
+            // 装载内容
+            li.find("p").html("<span class=\"arrow\"></span>" + r.content);
+
+            // 装载昵称和头像
+            switch (r.sender.toLowerCase()) {
+                case "o":
+                    break;
+                case "s":
+                    li.find("p").before(
+                        $(document.createElement("span")).text(r.servicer.nickname + " TO: " + r.client.nickname).addClass("name")
+                    );
+                    li.find("img").attr("src", r.servicer.headimg);
+                    break;
+                case "c":
+                    li.find(".name").text(r.client.nickname);
+                    li.find("img").attr("src", r.client.headimg);
+                    break;
+            }
+
+            // 装载li
+            li.removeClass("template").prependTo("ul.talk_list");
+
+            // 消息窗口向上滚动
+            var ul = li.parents(".talk_list");
+            if (scroll_direction == "top")
+                ul.scrollTop(0);
+            else {
+                var ul_height_px = ul.height();
+                var ul_scrollHeight = ul[0].scrollHeight - ul.css("padding-bottom").replace("px", "");
+                if (ul_scrollHeight > ul_height_px) {
+                    ul.scrollTop(ul_scrollHeight - ul_height_px);
+                }
+            }
+        },
+
+        // 获取更多历史消息的点击监听
+        show_more_records_Listener: function() {
+            var that = this;
+
+            $(".more_record.show").unbind().on("touchstart mousedown", function(e) {
+                e.preventDefault();
+
+                var start_count = $(".wrapper_right .talk_list li.message:not(.template)").length;
+                that.getRecords_ajax.apply(that, [that.getRecords_opt.cid, that.getRecords_opt.sid, start_count, "top"]);
+
             });
         },
 
@@ -78,6 +251,9 @@ define(["lib/LayerShow"], function($LayerShow) {
                         break;
                     case 3:
                         that.button_inline_click_3.apply(that, [li_obj.parents(".line_li")]);
+                        break;
+                    case 4:
+                        that.button_inline_click_4.apply(that, [li_obj.parents(".line_li").attr("_id")]);
                         break;
                     default:
                         break;
@@ -180,6 +356,16 @@ define(["lib/LayerShow"], function($LayerShow) {
                 _deal_ajax($(this).attr("_id"));
             });
             iosDialog1.css("display", "block");
+        },
+        // 行内按钮点击-4-查看消息
+        button_inline_click_4: function(_id) {
+
+            var that = this;
+
+            // 清空原先记录
+            $(".wrapper_right li:not(.template,.more_record)").remove();
+            
+            that.getRecords_ajax.apply(that, ["", _id, 0, "bottom"]);
         },
         // 弹层-添加/修改客服
         showLayer_add_servicer: function(form_html) {

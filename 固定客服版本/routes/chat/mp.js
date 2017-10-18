@@ -8,22 +8,83 @@ var router = require("express").Router(),
     func = require("../../handle/functions"),
     async = require("async"),
     mongo = require("../../handle/mongodb"),
-    login_bid, // 验证登录状态后的bid，0代表失败
+    config = require("../../handle/config"),
+    getRecord_handle = require("../../handle/getRecords"),
     chat_config = require("../../handle/chat_config"),
+    login_bid = -1, // 登录商家bid
+    login_route = "/mp/login", // 登录页
     db;
 
-// 验证登录状态_async模式。bid存入login_bid中，0代表未登录
-var check_login_status = function(callback) {
+// 生成token并返回
+// username: 用户名
+// passwd_sha1: sha1处理过的密码
+var create_token = function(username, passwd_sha1) {
+    var random_str = func.CreateRandomStr(10, 7);
 
-    // 此处应结合api接口+cookie，验证身份，返回bid
-    login_bid = -1;
+    var date = new Date();
+    var timestamp = date.getTime();
 
-    // next
-    callback(null);
+    return func.CreateHash(username + passwd_sha1 + random_str + timestamp.toString(), "sha1", 1);
+};
+
+// 验证登录状态_middleware模式。未登录跳转至登录页
+var mw_check_login_status = function(req, res, next) {
+
+    // 获取cookie中保存的token
+    var get_cookie = function(_db, callback) {
+        db = _db;
+
+        // var collection_init = db.collection("init");
+        // collection_init.insertOne({
+        //     "mp_user": "topu.net",
+        //     "mp_passwd": "356a192b7913b04c54574d18c28d46e6395428ab"
+        // });
+
+        if (!req.cookies)
+            res.redirect(login_route);
+        else {
+
+            var token;
+            var deal_eval_str = "token = req.cookies." + config.cookie_pre + "mp_cookie;";
+            eval(deal_eval_str);
+            if (!token)
+                res.redirect(login_route);
+            else {
+                callback(null, token);
+            }
+        }
+    };
+
+    // 验证token
+    var valid_token = function(token, callback) {
+        // console.log("\n\nservicer", 48, "token:", token);
+        var collection_init = db.collection("init");
+        collection_init.find({
+            token: token
+        }).next(function(err, servicer) {
+            // console.log("\n\nservicer", 55, "servicer:\n", servicer);
+            if (!servicer) // 未找到servicer记录
+                res.redirect(login_route);
+            else {
+                callback(null);
+            }
+        });
+    };
+
+    // 执行async
+    async.waterfall([
+        mongo.connect_async,
+        get_cookie,
+        valid_token
+    ], function() {
+        next();
+    });
 };
 
 // 主管理页
-router.get("/", function(req, res) {
+router.get("/", mw_check_login_status, function(req, res) {
+
+
 
     // 验证bid状态
     var check_bid = function(callback) {
@@ -59,14 +120,14 @@ router.get("/", function(req, res) {
         } else {
             // console.log("\n\nmp", 55, "servicers:\n", servicers);
             res.render("Chat/mp.html", {
-                servicers: servicers
+                servicers: servicers,
+                comm_talk_list_template: []
             });
         }
     };
 
     // 执行async
     async.waterfall([
-        check_login_status, // 验证登录状态
         check_bid, // 验证bid状态
         mongo.connect_async, // 连接mongodb
         get_servicer_list // 获取客服列表
@@ -75,7 +136,93 @@ router.get("/", function(req, res) {
 
 // 登录页
 router.get("/login", function(req, res) {
-    res.render("chat/mp_login.html");
+    res.render("chat/mp_login.html", {
+        from: "mp"
+    });
+});
+
+// 登录处理页
+router.post("/login/deal", function(req, res) {
+    var params;
+
+    // 获取表单参数
+    var get_Params = function(callback) {
+        params = {
+            username: req.body.username,
+            passwd: req.body.passwd
+        };
+
+        callback(null);
+    };
+
+    // 验证登录
+    var valid_login = function(_db, callback) {
+
+        db = _db;
+
+        var collection_init = db.collection("init");
+        collection_init.find({
+            "mp_user": params.username,
+            "mp_passwd": func.CreateHash(params.passwd, "sha1", 1)
+        }).next(function(err, user) {
+            if (err || !user)
+                callback("用户名或密码错");
+            else {
+                callback(null);
+            }
+        });
+    };
+
+    // 创建token并写入cookie
+    var set_cookie = function(callback) {
+        var token = create_token(params.username, params.passwd);
+
+        res.cookie(config.cookie_pre + "mp_cookie", token, { httpOnly: false });
+
+        callback(null, token);
+    };
+
+    // 更新表token
+    var update_db_token = function(token, callback) {
+
+        var collection_init = db.collection("init");
+        collection_init.updateMany({}, { $set: { token: token } }, function(err) {
+            if (err)
+                callback("系统错误，请稍后再试");
+            else
+                callback(null);
+        });
+    };
+
+    // 执行async
+    async.waterfall([
+        get_Params,
+        mongo.connect_async,
+        valid_login,
+        set_cookie,
+        update_db_token
+    ], function(err) {
+        db.close();
+
+        if (err)
+            res.send(err);
+        else
+            res.send("success");
+    });
+});
+
+// 退出
+router.post("/quit", function(req, res) {
+
+    res.cookie(config.cookie_pre + "mp_cookie", "", { maxAge: -1 });
+    res.send("success");
+});
+
+// 根据cid和sid获得会话记录，并返回html代码
+router.post("/getRecords", function(req, res) {
+
+    getRecord_handle.getRecords(req, res);
+
 });
 
 // 客服 - 添加/修改 表单生成页
@@ -177,7 +324,7 @@ router.post("/servicer/get_form", function(req, res) {
 });
 
 // 客服 - 添加/修改 表单处理页。成功输出"success:" + insertedId(添加时此参数有值)，失败输出错误信息
-router.post("/servicer/form_deal", function(req, res) {
+router.post("/servicer/form_deal", mw_check_login_status, function(req, res) {
     var dataForm; // 表单数据
 
     // 获取表单数据
@@ -272,7 +419,6 @@ router.post("/servicer/form_deal", function(req, res) {
 
     // 执行async
     async.waterfall([
-        check_login_status, // 验证登录，返回bid
         mongo.connect_async, // 连接数据库，返回db
         getForm, // 获取表单数据
         dealData // 添加或修改数据
@@ -291,7 +437,7 @@ router.post("/servicer/form_deal", function(req, res) {
 });
 
 // 客服 - 修改alive。成功输出"success"，失败输出错误信息
-router.post("/servicer/alive", function(req, res) {
+router.post("/servicer/alive", mw_check_login_status, function(req, res) {
     var id;
 
     // 验证bid
@@ -347,7 +493,6 @@ router.post("/servicer/alive", function(req, res) {
 
     // 执行async
     async.waterfall([
-        check_login_status,
         check_bid,
         mongo.connect_async, // 连接mongodb
         getParams, // 获取地址栏
@@ -366,7 +511,7 @@ router.post("/servicer/alive", function(req, res) {
 });
 
 // 客服 - 删除。成功输出"success"，失败输出错误信息
-router.post("/servicer/del", function(req, res) {
+router.post("/servicer/del", mw_check_login_status, function(req, res) {
     var _id;
 
     // 验证bid
@@ -408,7 +553,6 @@ router.post("/servicer/del", function(req, res) {
 
     // 执行async
     async.waterfall([
-        check_login_status,
         check_bid,
         get_Params,
         mongo.connect_async,

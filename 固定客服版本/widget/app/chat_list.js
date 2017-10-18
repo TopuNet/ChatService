@@ -231,8 +231,7 @@ define([
         LayerShow_filterSelected: function(sort_obj) {
 
             // 监听
-            sort_obj.unbind().on("touchstart mousedown", function(e) {
-                e.preventDefault();
+            sort_obj.unbind().on("click", function(e) {
 
                 location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid");
 

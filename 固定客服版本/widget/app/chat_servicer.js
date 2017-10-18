@@ -380,7 +380,7 @@ define([
             // console.log(date);
 
             // 声音提示
-            if (kind == 3 && $(".cell_title .buttons .mute").hasClass("cancel")) {
+            if (kind == 3 && $(".cell_title .buttons .mute").hasClass("cancel") && prepend !== true) {
                 document.getElementById("newMessageAudio").play();
             }
 

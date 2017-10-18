@@ -159,6 +159,10 @@ app.use('/servicer', servicer);
 var api = require('./routes/chat/api.js');
 app.use('/api', api);
 
+// Pic_code
+var Pic_code = require('./routes/Pic_code.js');
+app.use('/Pic_code', Pic_code);
+
 // 404 || 500
 var p404 = require('./routes/404.js');
 app.use(p404);

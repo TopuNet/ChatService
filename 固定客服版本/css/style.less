@@ -212,25 +212,41 @@ body.chat_mp_login {
 // 管理页
 body.chat_mp_index .wrapper {
     // border: solid 3px #666;
+    margin:0;
     display: table;
     width: 100%;
     height: 100vh;
     border-collapse: collapse; // 列
     div.wrapper_cell {
         display: table-cell;
+        vertical-align: top;
         border: solid 3px #666;
+        box-sizing: border-box;
         padding: 20px; // 左侧
         &.wrapper_left {
-            width: 40%; // 添加新客服按钮
-            div.add_button {
-                font-size: 14px;
-                cursor: pointer; // 悬停效果
-                &:hover {
-                    background: #f5f5f5;
+            width: 40%;
+
+            /* 顶部按钮 */
+            .buttons {
+
+                text-align: center;
+
+                /* 按钮们 */
+                li {
+                    .inline-block();
+                    margin: 0 10px;
+                    font-size: 14px;
+                    cursor: pointer;
+
+                    /* 悬停效果 */
+                    &:hover {
+                        background: #f5f5f5;
+                    }
                 }
-            } // 客服列表
+            }
+            /* 客服列表 */
             ul.servicer_list_ul {
-                margin-top: 30px; // 行
+                /* 行 */
                 &>li {
                     // 列集合
                     ul {
@@ -482,133 +498,6 @@ body.chat_servicer {
                         padding-right: 20px;
                         cursor: pointer;
                     }
-                } // 加载中
-                p.loading {
-                    display: none;
-                    margin-top: 20px;
-                    font-size: 12px;
-                    color: @gray_dark;
-                    text-align: center;
-                } // 消息记录
-                ul.talk_list {
-                    .flex_set(1 1); // flex: auto;
-                    overflow-x: hidden;
-                    overflow-y: scroll;
-                    text-align: center;
-                    padding-bottom: 10px; // 行
-                    /*li {
-                        margin-top: 10px;
-                        clear: both;
-                        // 模板
-                        &.template {
-                            display: none!important;
-                        }
-                        // 系统消息行————居中
-                        &.center {
-                            display: block;
-                            overflow: hidden;
-                            text-align: center;
-                            margin-top: 10px;
-                            div.message_content {
-                                display: inline-block;
-                                padding: 5px 10px;
-                                // background: #cecece;
-                                .border-radius();
-                                p {
-                                    color: #b2b2b2;
-                                    text-align: center;
-                                    font-size: 12px!important;
-                                }
-                            }
-                            // 系统消息后的首个消息行增高行距
-                            &+li.message {
-                                margin-top: 10px;
-                            }
-                            // 系统消息后的系统消息行减少行距
-                            &+li.center {
-                                margin-top: 10px;
-                            }
-                        }
-                        // 消息行————居左右
-                        &.message {
-                            overflow: hidden;
-                            // 头像
-                            img.head {
-                                width: 30px;
-                                height: 30px;
-                            }
-                            div.message_content {
-                                text-align: left;
-                                line-height: 1;
-                                max-width: 70%;
-                                // 姓名
-                                span.name {
-                                    color: #848484;
-                                    text-align: left;
-                                    margin: 0px;
-                                    font-size: 12px;
-                                    line-height: 1;
-                                }
-                                // 文字内容
-                                p {
-                                    position: relative;
-                                    border: solid 1px #dbdbdb;
-                                    .border-radius();
-                                    background: #fff;
-                                    padding: 5px 10px;
-                                    word-break: break-word;
-                                    line-height: 20px;
-                                    text-align: left;
-                                    span.arrow {
-                                        position: absolute;
-                                        width: 5px;
-                                        height: 8.5px;
-                                    }
-                                }
-                            }
-                            // 左侧消息的特殊样式
-                            &.left {
-                                img.head {
-                                    float: left;
-                                    margin-left: 20px;
-                                }
-                                div.message_content {
-                                    float: left;
-                                    margin-left: 10px;
-                                    p {
-                                        margin-top: 5px;
-                                    }
-                                    span.arrow {
-                                        top: 5px;
-                                        left: -5px;
-                                        background: url("/inc/chat_arrow_left.png") no-repeat;
-                                        background-size: cover;
-                                    }
-                                }
-                            }
-                            // 右侧消息的特殊样式
-                            &.right {
-                                img.head {
-                                    float: right;
-                                    margin-right: 20px;
-                                }
-                                div.message_content {
-                                    float: right;
-                                    margin-right: 10px;
-                                    p {
-                                        background: @bg_green;
-                                        // color: #1477fa;
-                                        span.arrow {
-                                            top: 10px;
-                                            right: -5px;
-                                            background: url("/inc/chat_arrow_right.png") no-repeat;
-                                            background-size: cover;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }*/
                 } // 占位行
                 .fixed_space {
                     .flex_set(0 0 @textarea_fixed_height_px+@tool_fixed_height_px);
@@ -641,6 +530,29 @@ body.chat_servicer {
             }
         }
     }
+}
+
+// mp和servicer通用 - 消息列表
+body.chat_mp_index,
+body.chat_servicer {
+    // 加载中
+    p.loading {
+        display: none;
+        margin-top: 20px;
+        font-size: 12px;
+        color: @gray_dark;
+        text-align: center;
+    } // 消息记录
+    ul.talk_list {
+        .flex_set(1 1); // flex: auto;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        text-align: center;
+        padding-bottom: 10px;
+    }
+}
+body.chat_mp_index ul.talk_list{
+    height:90vh;
 }
 
 // 通用 - 会话列表
@@ -727,7 +639,8 @@ body.chat_servicer {
 
 // 消息记录列表
 body.Chat ul.list,
-body.chat_servicer ul.talk_list {
+body.chat_servicer ul.talk_list,
+body.chat_mp_index ul.talk_list {
     // 行
     li {
         margin-top: 10px;

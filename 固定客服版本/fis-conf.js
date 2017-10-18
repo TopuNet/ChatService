@@ -53,13 +53,20 @@ fis.match('/images/**.png', {
 // Global end
 
 // zqfdev start
-fis.match('/handle/chat_config_zqfdev.js_bak', {
+fis.media('zqfdev').match('/handle/chat_config_zqfdev.js_bak', {
     release: '/handle/chat_config',
-    rExt:'.js'
+    rExt: '.js'
 });
-fis.match('/launch/www_zqfdev.js_bak', {
+fis.media('zqfdev').match('/handle/chat_config_zqf.js_bak', {
+    release: false
+});
+
+fis.media('zqfdev').match('/launch/www_zqfdev.js_bak', {
     release: '/launch/www',
-    rExt:'.js'
+    rExt: '.js'
+});
+fis.media('zqfdev').match('/launch/www_zqf.js_bak', {
+    release: false
 });
 
 fis.media('zqfdev').match('/inc/**', {
@@ -74,13 +81,20 @@ fis.media('zqfdev').match('{/css/**,/images/**,/widget/**}', {
 // zqfdev end
 
 // zqf start
-fis.match('/handle/chat_config_zqf.js_bak', {
+fis.media('zqf').match('/handle/chat_config_zqf.js_bak', {
     release: '/handle/chat_config',
-    rExt:'.js'
+    rExt: '.js'
 });
-fis.match('/launch/www_zqf.js_bak', {
+fis.media('zqf').match('/handle/chat_config_zqfdev.js_bak', {
+    release: false
+});
+
+fis.media('zqf').match('/launch/www_zqf.js_bak', {
     release: '/launch/www',
-    rExt:'.js'
+    rExt: '.js'
+});
+fis.media('zqf').match('/launch/www_zqfdev.js_bak', {
+    release: false
 });
 
 fis.media('zqf').match('/inc/**', {

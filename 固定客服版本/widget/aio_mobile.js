@@ -2881,8 +2881,7 @@ define('app/chat_list',[
         LayerShow_filterSelected: function(sort_obj) {
 
             // 监听
-            sort_obj.unbind().on("touchstart mousedown", function(e) {
-                e.preventDefault();
+            sort_obj.unbind().on("click", function(e) {
 
                 location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid");
 
@@ -3163,7 +3162,7 @@ define('app/chat',[
             // console.log(kind, msg, cid, sid, date.toLocaleString());
 
             // 声音提示
-            if (kind == 3 && $(".footer_button .mute").hasClass("cancel")) {
+            if (kind == 3 && $(".footer_button .mute").hasClass("cancel") && prepend !== true) {
                 var newMessage_audio = document.getElementById("newMessage");
                 newMessage_audio.muted = false;
                 newMessage_audio.play();

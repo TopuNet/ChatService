@@ -11,7 +11,11 @@
 <body class="chat_mp_index">
     <div class="wrapper min-content">
         <div class="wrapper_cell wrapper_left">
-            <div class="add_button weui-btn weui-btn_plain-default">添加新客服</div>
+            <ul class="buttons">
+                <li class="show_record weui-btn weui-btn_plain-default">全部消息</li>
+                <li class="add_servicer weui-btn weui-btn_plain-default">添加新客服</li>
+                <li class="quit weui-btn weui-btn_plain-default">退出</li>
+            </ul>
             <ul class="servicer_list_ul">
                 <li class="line_li template" _id="">
                     <ul class="line_item_ul">
@@ -22,7 +26,7 @@
                         <li class="receiveNew_li button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">接收新会话</span><span class="bubble"></span></li>
                         <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">修改</span></li>
                         <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">删除</span></li>
-                        <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">查看消息记录</span></li>
+                        <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">查看消息</span></li>
                     </ul>
                 </li>
                 <% if(servicers.length){ %>
@@ -38,7 +42,7 @@
                                 <li class="receiveNew_li button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">接收新会话</span><span class="bubble<% if(!s.alive){ %> no<% } %>"></span></li>
                                 <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">修改</span></li>
                                 <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">删除</span></li>
-                                <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">查看消息记录</span></li>
+                                <li class="button_inline"><span class="weui-btn weui-btn_mini weui-btn_default">查看消息</span></li>
                             </ul>
                         </li>
                         <% }); %>
@@ -46,7 +50,12 @@
             </ul>
         </div>
         <div class="wrapper_cell wrapper_right">
+            <p class="loading">加载中，请稍候...</p>
+            <ul class="talk_list">
+                <% include  comm_talk_list_template.html %>
+            </ul>
         </div>
+    </div>
         <% include ../weui.html %>
             <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat_mp_index"></script>
 </body>
