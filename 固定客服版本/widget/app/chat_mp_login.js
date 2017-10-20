@@ -4,7 +4,7 @@
     2017-05-25
 */
 
-define(["lib/pic_code.js"], function($pic_code) {
+define(["lib/pic_code"], function($pic_code) {
     var chat_mp_login = {
         init: function() {
 

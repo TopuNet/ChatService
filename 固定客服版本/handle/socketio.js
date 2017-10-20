@@ -10,6 +10,7 @@
 var socket_io = require('socket.io'),
     // config = require('./config.js'),
     mongo = require("../handle/mongodb.js"),
+    getRecords_handle = require("../handle/getRecords.js"),
     async = require("async");
 
 //获取io
@@ -198,6 +199,7 @@ var socketio = function() {
 
                 var db;
                 var rdate = new Date(_rdate);
+                var risk; // 内容风险 true | false
 
                 // 更新chats表的has_noRead_record、last_timestamp、last_content和last_rdate
                 var update_last_time = function(_db, callback) {
@@ -243,8 +245,34 @@ var socketio = function() {
 
                 };
 
+                // 风险筛查
+                var risk_match = function(callback) {
+
+                    // 准备工作
+                    var prepare = function(callback_risk) {
+                        var talk_list = [{
+                            content: msg
+                        }];
+
+                        callback_risk(null, talk_list, false);
+                    };
+
+                    async.waterfall([
+                        prepare,
+                        getRecords_handle.highlightKeywords_async
+                    ], function(err, result) {
+                        if (err) {
+                            console.log("\n\n", "socketio", 265, "err:\n", err);
+                            callback(null, false);
+                        } else {
+                            callback(null, result[0].risk_maybe);
+                        }
+
+                    });
+                };
+
                 // 添加记录
-                var addRecord = function(callback) {
+                var addRecord = function(risk_maybe, callback) {
                     var collection_records = db.collection("records");
 
                     // 添加records
@@ -255,7 +283,8 @@ var socketio = function() {
                         "kind": 1,
                         "sender": sender,
                         "timestamp": rdate.getTime(),
-                        "rdate": rdate.toLocaleString()
+                        "rdate": rdate.toLocaleString(),
+                        "risk_maybe": risk_maybe
                     }, function(err) {
                         if (err) {
                             console.log("\n\nsocketio", 185, "err:\n", err);
@@ -282,6 +311,7 @@ var socketio = function() {
                 async.waterfall([
                     mongo.connect_async,
                     update_last_time,
+                    risk_match,
                     addRecord,
                     send_broadcast
                 ], function(err) {

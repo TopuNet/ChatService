@@ -19,6 +19,10 @@ define(["lib/LayerShow"], function($LayerShow) {
 
         loadingToast: $(".loadingToast"),
 
+        cellRight_p_loading: $(".wrapper_right p.loading"), // 加载中提示盒
+
+        cellRight_talkList: $(".wrapper_right ul.talk_list"), // 右侧消息记录列表盒
+
         init: function() {
 
             var that = this;
@@ -38,7 +42,40 @@ define(["lib/LayerShow"], function($LayerShow) {
 
                 var button_this = $(this);
 
-                if (button_this.hasClass("add_servicer")) {
+                // 清除当前高亮
+                button_this.siblings(".now").removeClass("now");
+                $(".button_inline span.weui-btn.now").removeClass("now");
+
+                if (button_this.hasClass("show_record")) {
+
+                    // 高亮
+                    button_this.addClass("now");
+
+                    // 清空原先记录
+                    $(".wrapper_right li:not(.template,.more_record)").remove();
+
+                    /* 消息记录 */
+                    var cid = "";
+                    var sid = "";
+                    var start_count = 0;
+                    var scroll_direction = "bottom";
+                    that.getRecords_ajax.apply(that, [cid, sid, start_count, scroll_direction]);
+                } else if (button_this.hasClass("show_risk_record")) {
+
+                    // 高亮
+                    button_this.addClass("now");
+
+                    // 清空原先记录
+                    $(".wrapper_right li:not(.template,.more_record)").remove();
+
+                    /* 消息记录 */
+                    var cid = "";
+                    var sid = "";
+                    var start_count = 0;
+                    var scroll_direction = "bottom";
+                    var risk_match = true;
+                    that.getRecords_ajax.apply(that, [cid, sid, start_count, scroll_direction, risk_match]);
+                } else if (button_this.hasClass("add_servicer")) {
 
                     /* 添加新客服 */
                     var callback = function(result) {
@@ -46,6 +83,19 @@ define(["lib/LayerShow"], function($LayerShow) {
                     };
                     that.get_form.apply(that, [callback]);
 
+                } else if (button_this.hasClass("set_init")) {
+
+                    /* 设置 */
+                    $.ajax({
+                        url: "/mp/setInit/get_form",
+                        type: "post",
+                        beforeSend: function() {
+                            that.loadingToast.css("display", "none");
+                        },
+                        success: function(result) {
+                            that.showLayer_setInit.apply(that, [result]);
+                        }
+                    });
                 } else if (button_this.hasClass("quit")) {
 
                     /* 退出 */
@@ -60,17 +110,6 @@ define(["lib/LayerShow"], function($LayerShow) {
                         }
                     });
 
-                } else if (button_this.hasClass("show_record")) {
-
-                    // 清空原先记录
-                    $(".wrapper_right li:not(.template,.more_record)").remove();
-
-                    /* 消息记录 */
-                    var cid = "";
-                    var sid = "";
-                    var start_count = 0;
-                    var scroll_direction = "bottom";
-                    that.getRecords_ajax.apply(that, [cid, sid, start_count, scroll_direction]);
                 }
 
             });
@@ -78,14 +117,16 @@ define(["lib/LayerShow"], function($LayerShow) {
 
         // ajax获取消息记录
         // @scroll_direction: "top" || "bottom"(默认)
-        getRecords_ajax: function(cid, sid, start_count, scroll_direction) {
+        // @risk_match: 只查询疑似风险的记录 true || false(默认)
+        getRecords_ajax: function(cid, sid, start_count, scroll_direction, risk_match) {
             var that = this;
 
-            var p_loading = $(".wrapper_right p.loading"); // 加载中提示盒
+            risk_match = risk_match || false;
 
             that.getRecords_opt = {
                 cid: cid,
-                sid: sid
+                sid: sid,
+                risk_match: risk_match
             };
 
             // 获取消息记录
@@ -95,12 +136,16 @@ define(["lib/LayerShow"], function($LayerShow) {
                 data: {
                     cid: cid,
                     sid: sid,
-                    start_count: start_count
+                    start_count: start_count,
+                    risk_match: risk_match
                 },
                 beforeSend: function() {
-                    p_loading.css("display", "block");
+                    that.cellRight_p_loading.css("display", "block");
                 },
                 success: function(result) {
+
+                    that.cellRight_p_loading.css("display", "none");
+                    that.cellRight_talkList.css("display", "block");
 
                     // console.dir(result);
 
@@ -118,9 +163,6 @@ define(["lib/LayerShow"], function($LayerShow) {
                         });
                     }
 
-                    // 隐藏“加载中”
-                    p_loading.css("display", "none");
-
                     // 判断是否需要显示“查看更多历史消息”
                     var more_record = $("ul.talk_list .more_record");
                     if (c < that.RECORD_COUNT)
@@ -128,7 +170,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                     else {
                         if (!more_record.hasClass("show"))
                             more_record.addClass("show").css("cursor", "pointer");
-                        more_record.prependTo("ul.talk_list");
+                        more_record.prependTo(that.cellRight_talkList);
                         that.show_more_records_Listener.apply(that);
                     }
                 }
@@ -139,6 +181,8 @@ define(["lib/LayerShow"], function($LayerShow) {
         // @r: 消息记录对象
         // @scroll_direction: 加载完成后滚动方向 "top" | "bottom"(默认)
         send_message: function(r, scroll_direction) {
+
+            var that = this;
 
             scroll_direction = scroll_direction || "bottom";
 
@@ -179,10 +223,10 @@ define(["lib/LayerShow"], function($LayerShow) {
             }
 
             // 装载li
-            li.removeClass("template").prependTo("ul.talk_list");
+            li.removeClass("template").prependTo(that.cellRight_talkList);
 
             // 消息窗口向上滚动
-            var ul = li.parents(".talk_list");
+            var ul = that.cellRight_talkList;
             if (scroll_direction == "top")
                 ul.scrollTop(0);
             else {
@@ -202,7 +246,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                 e.preventDefault();
 
                 var start_count = $(".wrapper_right .talk_list li.message:not(.template)").length;
-                that.getRecords_ajax.apply(that, [that.getRecords_opt.cid, that.getRecords_opt.sid, start_count, "top"]);
+                that.getRecords_ajax.apply(that, [that.getRecords_opt.cid, that.getRecords_opt.sid, start_count, "top", that.getRecords_opt.risk_match]);
 
             });
         },
@@ -240,6 +284,10 @@ define(["lib/LayerShow"], function($LayerShow) {
             var that = this;
 
             $(".button_inline .weui-btn").unbind().on("click", function() {
+
+                // 清除顶部按钮高亮
+                $(".buttons li.now").removeClass("now");
+
                 var li_obj = $(this).parents(".button_inline");
                 var index = li_obj.parent().find(".button_inline").index(li_obj) + 1;
                 switch (index) {
@@ -253,6 +301,13 @@ define(["lib/LayerShow"], function($LayerShow) {
                         that.button_inline_click_3.apply(that, [li_obj.parents(".line_li")]);
                         break;
                     case 4:
+
+                        // 清除原先高亮
+                        $(".button_inline .weui-btn.now").removeClass("now");
+
+                        // 高亮当前点击按钮
+                        $(this).addClass("now");
+
                         that.button_inline_click_4.apply(that, [li_obj.parents(".line_li").attr("_id")]);
                         break;
                     default:
@@ -364,18 +419,21 @@ define(["lib/LayerShow"], function($LayerShow) {
 
             // 清空原先记录
             $(".wrapper_right li:not(.template,.more_record)").remove();
-            
+
             that.getRecords_ajax.apply(that, ["", _id, 0, "bottom"]);
         },
-        // 弹层-添加/修改客服
-        showLayer_add_servicer: function(form_html) {
+        // 弹层处理
+        // @opt：方法内有预设的默认opt，特殊opt可以通过此参数传递。
+        showLayer_Handler: function(opt) {
+
             var that = this;
 
             // 创建新LayerShow实例。注意：不要反复的创建实例，每个实例会在show()之后创建一组dom
-            that.servicer_form_layershow = new $LayerShow();
+            if (!that.servicer_form_layershow)
+                that.servicer_form_layershow = new $LayerShow();
 
             // 显示
-            var opt = {
+            var opt_default = {
                 // z_index: 弹层的z - index。 图片 / 图文内容层为z_index + 1。 默认400
                 // bg_color: 背景层16进制颜色。 默认 #000000
                 // bg_opacity: 背景层透明度，0～1。默认0.8
@@ -386,7 +444,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                 // Pics_arrow_left: showKind = 1 时有效。 图片切换 左箭头图片路径。 默认 / inc / LayerShow_arrow_left.png。
                 // Pics_arrow_right: showKind = 1 时有效。 图片切换 右箭头图片路径。 默认 / inc / LayerShow_arrow_left.png。
                 // callback_image_click: showKind = 1 时有效。 图片点击回调： 1 - 关闭弹层 | 2 - 下一张图片 | function(li_obj) - 自定义方法。 默认 "1"
-                info_content: form_html,
+                // info_content: form_html,
                 info_box_width_per: 80,
                 // info_box_height_per: showKind = 2 时有效， 内容盒高度百分比。 默认90
                 // info_box_radius: showKind = 2 时有效， 内容盒是否圆角。 默认true
@@ -403,34 +461,127 @@ define(["lib/LayerShow"], function($LayerShow) {
                 // Pics_close_path: 关闭按钮图片路径。 默认 / inc / LayerShow_close.png。
                 // callback_before: 弹层前回调。 如显示loading层。 无默认
                 // callback_close: 关闭弹层后的回调。 没想好如什么。 无默认
+                // callback_success: function() {
+                //     $("input.sname").focus();
+
+                //     // 监听表单
+                //     that.showLayer_add_servicer_form_Listener.apply(that);
+                // }
+
+            };
+            that.servicer_form_layershow.show($.extend(opt_default, opt));
+        },
+
+        // 弹层-系统设置
+        showLayer_setInit: function(form_html) {
+            var that = this;
+
+            var opt = {
+                info_content: form_html,
+                callback_success: function() {
+
+                    // 监听表单
+                    that.showLayer_setInit_form_Listener.apply(that);
+                }
+            };
+
+            that.showLayer_Handler.apply(that, [opt]);
+        },
+
+        // 监听系统设置表单
+        showLayer_setInit_form_Listener: function() {
+
+            var that = this;
+
+            $(".form_submit_button").unbind().on("click", function() {
+                that.showLayer_setInit_form_check.apply(that);
+            });
+        },
+
+        // 系统设置表单 验证
+        showLayer_setInit_form_check: function() {
+
+            var that = this;
+
+            var form = $(".mp_setInit_form");
+
+            var formData = {
+                mp_user: form.find(".mp_user").val(),
+                mp_passwd: form.find(".mp_passwd").val(),
+                highlights_regExp: form.find(".highlights_regExp").val()
+            };
+
+            // 拆分highlights_regExp为数组
+            var regExp = new RegExp(/\n/ig);
+            formData.highlights_regExp = formData.highlights_regExp.split(regExp);
+
+            var error_str = "";
+            if (formData.mp_user === "") {
+                error_str = "请键入账号";
+            }
+
+            if (error_str !== "") {
+                that.show_errorLayer(error_str);
+            } else {
+                that.showLayer_setInit_form_submit.apply(that, [form, formData]);
+            }
+        },
+
+        // 系统设置表单 提交
+        // @form: form对象
+        // @formData: 提交数据
+        showLayer_setInit_form_submit: function(form, formData) {
+
+            var that = this;
+
+            $.ajax({
+                url: "/mp/setInit/deal",
+                type: "post",
+                data: formData,
+                beforeSend: function() {
+                    that.loadingToast.css("display", "block");
+                },
+                success: function() {
+                    that.loadingToast.css("display", "none");
+                    that.show_errorLayer("修改成功");
+                }
+            })
+        },
+
+        // 弹层-添加/修改客服
+        showLayer_add_servicer: function(form_html) {
+            var that = this;
+
+            var opt = {
+                info_content: form_html,
                 callback_success: function() {
                     $("input.sname").focus();
 
                     // 监听表单
                     that.showLayer_add_servicer_form_Listener.apply(that);
                 }
-
             };
-            that.servicer_form_layershow.show(opt);
+
+            that.showLayer_Handler.apply(that, [opt]);
         },
         // 监听添加/修改客服表单
         showLayer_add_servicer_form_Listener: function() {
             var that = this;
 
             // 监听头像点击
-            that.headimg_click_Listener.apply(that);
+            that.add_servicer_headimg_click_Listener.apply(that);
 
             // 监听全部分类的点击
-            that.sort_checkall_Listener.apply(that);
+            that.add_servicer_sort_checkall_Listener.apply(that);
 
             // 监听分类点击
-            that.sort_li_click_Listener.apply(that);
+            that.add_servicer_sort_li_click_Listener.apply(that);
 
             // 监听表单提交
-            that.form_submit_Listener.apply(that);
+            that.add_servicer_form_submit_Listener.apply(that);
         },
-        // 监听头像点击
-        headimg_click_Listener: function() {
+        // 监听 添加/修改客服 - 头像点击
+        add_servicer_headimg_click_Listener: function() {
             // var that = this;
 
             $(".headimg_ul li").unbind().click(function() {
@@ -438,8 +589,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 $(this).addClass("selected");
             });
         },
-        // 监听全部分类的点击
-        sort_checkall_Listener: function() {
+        // 监听 添加/修改客服 - 全部分类的点击
+        add_servicer_sort_checkall_Listener: function() {
             var that = this;
 
             var checkall = $(".mp_servicer_form ul.form_line_ul li.sort_li .checkall");
@@ -467,8 +618,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 }
             });
         },
-        // 监听分类的点击
-        sort_li_click_Listener: function() {
+        // 监听 添加/修改客服 - 分类的点击
+        add_servicer_sort_li_click_Listener: function() {
 
             var li = $(".mp_servicer_form ul.form_line_ul li.sort_li li.sort_b");
 
@@ -478,15 +629,15 @@ define(["lib/LayerShow"], function($LayerShow) {
                 _this.toggleClass("checked");
             });
         },
-        // 监听表单提交
-        form_submit_Listener: function() {
+        // 监听 添加/修改客服 - 表单提交
+        add_servicer_form_submit_Listener: function() {
             var that = this;
 
             // 监听表单提交
             $(".mp_servicer_form form").unbind().on("submit", function() {
 
                 // 表单提交验证
-                that.form_submit_check.apply(that, [$(this)]);
+                that.add_servicer_form_submit_check.apply(that, [$(this)]);
                 return false;
             });
 
@@ -495,8 +646,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 $(".mp_servicer_form form").submit();
             });
         },
-        // 表单提交验证
-        form_submit_check: function(form_obj) {
+        // 添加/修改客服 - 表单提交验证
+        add_servicer_form_submit_check: function(form_obj) {
             var that = this;
             var _id = form_obj.find(".form_line_ul").attr("_id"),
                 sname = form_obj.find("input.sname").val(),
@@ -520,13 +671,7 @@ define(["lib/LayerShow"], function($LayerShow) {
 
             // 有错show错，没错提交
             if (error_str !== "") {
-                var iosDialog2 = $("#iosDialog2");
-                iosDialog2.find(".weui-dialog__bd").text(error_str);
-                iosDialog2.find(".weui-dialog__btn_primary").text("好的").unbind().on("click", function() {
-                    iosDialog2.css("display", "none");
-                });
-                iosDialog2.css("display", "block");
-
+                that.show_errorLayer.apply(that, [error_str]);
             } else {
 
                 // 拼接sort
@@ -536,7 +681,7 @@ define(["lib/LayerShow"], function($LayerShow) {
                 });
 
                 // 表单提交处理
-                that.form_submit_deal.apply(that, [form_obj, {
+                that.add_servicer_form_submit_deal.apply(that, [form_obj, {
                     _id: _id,
                     sname: sname,
                     nickname: nickname,
@@ -546,8 +691,8 @@ define(["lib/LayerShow"], function($LayerShow) {
                 }]);
             }
         },
-        // 表单提交处理
-        form_submit_deal: function(form_obj, form_data) {
+        // 添加/修改客服 - 表单提交处理
+        add_servicer_form_submit_deal: function(form_obj, form_data) {
             var that = this,
                 loadingToast = $(".loadingToast"),
                 toast = $("#toast");
@@ -632,6 +777,17 @@ define(["lib/LayerShow"], function($LayerShow) {
                     }
                 }
             });
+        },
+
+        // 表单验证 报错
+        show_errorLayer: function(error_str) {
+
+            var iosDialog2 = $("#iosDialog2");
+            iosDialog2.find(".weui-dialog__bd").text(error_str);
+            iosDialog2.find(".weui-dialog__btn_primary").text("好的").unbind().on("click", function() {
+                iosDialog2.css("display", "none");
+            });
+            iosDialog2.css("display", "block");
         }
     };
 

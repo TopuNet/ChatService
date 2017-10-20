@@ -212,19 +212,21 @@ body.chat_mp_login {
 // 管理页
 body.chat_mp_index .wrapper {
     // border: solid 3px #666;
-    margin:0;
+    margin: 0;
     display: table;
     width: 100%;
     height: 100vh;
-    border-collapse: collapse; // 列
+    border-collapse: collapse;
+    /* 列 */
     div.wrapper_cell {
         display: table-cell;
         vertical-align: top;
         border: solid 3px #666;
         box-sizing: border-box;
-        padding: 20px; // 左侧
+        padding: 20px;
+        /* 左侧 */
         &.wrapper_left {
-            width: 40%;
+            width: 45%;
 
             /* 顶部按钮 */
             .buttons {
@@ -238,7 +240,8 @@ body.chat_mp_index .wrapper {
                     font-size: 14px;
                     cursor: pointer;
 
-                    /* 悬停效果 */
+                    /* 悬停和高亮效果 */
+                    &.now,
                     &:hover {
                         background: #f5f5f5;
                     }
@@ -273,7 +276,9 @@ body.chat_mp_index .wrapper {
                             &+li {
                                 padding-top: 15px; // 按钮
                                 span {
-                                    cursor: pointer; // 悬停样式
+                                    cursor: pointer;
+                                    /* 悬停和高亮样式 */
+                                    &.now,
                                     &:hover {
                                         background: #ddd;
                                     }
@@ -283,7 +288,7 @@ body.chat_mp_index .wrapper {
                                 position: relative; // 按钮右上角气泡
                                 span.bubble {
                                     position: absolute;
-                                    right: -3px;
+                                    right: 3px;
                                     top: 8px;
                                     width: 26px;
                                     height: 26px; // 对勾图标
@@ -304,78 +309,114 @@ body.chat_mp_index .wrapper {
                     }
                 }
             }
-        } // 右侧
+        }
+        /* 右侧 */
         &.wrapper_right {
-            width: 60%;
+            width: 55%;
+
+            /* 消息列表盒 */
+            .talk_list {
+                display: none;
+            }
         }
     }
 }
 
-// 通用 - 管理 客服 添加/修改 表单部分
-div.mp_servicer_form {
+// 通用 - 管理 客服 添加/修改 表单部分，系统设置表单
+div.mp_servicer_form,
+div.mp_setInit_form {
     // width: 300px;
     width: 80%;
-    margin: 20px auto; // 表单行
+    margin: 20px auto;
+
+    /* 表单行 */
     ul.form_line_ul>li {
         height: 40px;
-        line-height: 40px; // 非首行
+        line-height: 40px;
+        /* 非首行 */
         &+li {
             border-top: dashed 1px #999;
-        } // 头像行
+        }
+        /* 标题 */
+        span {
+            float: left;
+        }
+        /* checkbox外的label */
+        label {
+            cursor: pointer;
+        }
+        /* input的外盒 */
+        div.input_box {
+            overflow: hidden;
+        }
+        /* input */
+        input {
+            width: 100%;
+
+            /* checkbox */
+            &[type=checkbox] {
+                width: 20px;
+            }
+        }
+
+        /* textarea */
+        textarea {
+            clear: left;
+            float: right;
+            width: 95%;
+            height: 200px;
+            border: dashed 1px #e5e5e5;
+            padding: 10px;
+            line-height: 20px;
+            outline: none;
+        }
+    }
+
+    /* 客服 添加/修改 特殊 */
+    &.mp_servicer_form ul.form_line_ul>li {
+
+        /* 头像行 */
         &.headimg_li {
             height: auto;
             span {
                 vertical-align: top;
             }
-        } // 标题
-        span {
-            float: left;
-        } // checkbox外的label
-        label {
-            cursor: pointer;
-        } // input的外盒
-        div.input_box {
-            overflow: hidden;
-        } // input
-        input {
-            width: 100%;
-            &[type=checkbox] {
-                width: 20px;
-            }
-        } // 头像
-        ul.headimg_ul {
-            display: block;
-            overflow: hidden;
-            text-align: left; // 单元
-            li {
-                .inline-block();
-                width: 50px;
-                height: 50px;
-                position: relative;
-                margin: 10px 0 0 25px;
-                cursor: pointer; // 头像
-                img {
+            /* 头像子ul */
+            ul.headimg_ul {
+                display: block;
+                overflow: hidden;
+                text-align: left; // 单元
+                li {
+                    .inline-block();
                     width: 50px;
                     height: 50px;
-                } // 选中印章
-                span {
-                    position: absolute;
-                    width: 26px;
-                    height: 26px;
-                    right: -5px;
-                    bottom: -5px;
-                } // 选中单元
-                &.selected {
-                    cursor: default; // 选中印章
+                    position: relative;
+                    margin: 10px 0 0 25px;
+                    cursor: pointer; // 头像
+                    img {
+                        width: 50px;
+                        height: 50px;
+                    } // 选中印章
                     span {
-                        background: url("/images/bubble_radic.png") no-repeat;
-                        background-size: cover;
+                        position: absolute;
+                        width: 26px;
+                        height: 26px;
+                        right: -5px;
+                        bottom: -5px;
+                    } // 选中单元
+                    &.selected {
+                        cursor: default; // 选中印章
+                        span {
+                            background: url("/images/bubble_radic.png") no-repeat;
+                            background-size: cover;
+                        }
                     }
                 }
             }
-        } // 分类行
+        }
+        /* 分类行 */
         &.sort_li {
-            height: auto; // 行内ul，包裹所有一二级分类
+            height: auto;
         }
     }
 }
@@ -551,8 +592,9 @@ body.chat_servicer {
         padding-bottom: 10px;
     }
 }
-body.chat_mp_index ul.talk_list{
-    height:90vh;
+
+body.chat_mp_index ul.talk_list {
+    height: 90vh;
 }
 
 // 通用 - 会话列表
@@ -706,6 +748,11 @@ body.chat_mp_index ul.talk_list {
                         position: absolute;
                         width: 5px;
                         height: 8.5px;
+                    }
+                    /* 关键词高亮 */
+                    hl {
+                        color: #d53e50;
+                        font-weight: bold;
                     }
                 }
             } // 左侧消息的特殊样式

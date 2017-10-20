@@ -162,6 +162,7 @@ router.post("/login/deal", function(req, res) {
 
         var collection_init = db.collection("init");
         collection_init.find({
+            "kind": "use",
             "mp_user": params.username,
             "mp_passwd": func.CreateHash(params.passwd, "sha1", 1)
         }).next(function(err, user) {
@@ -218,10 +219,96 @@ router.post("/quit", function(req, res) {
     res.send("success");
 });
 
+// 系统设置 - 获得表单
+router.post("/setInit/get_form", function(req, res) {
+
+    var db;
+
+    var getInit = function(_db, callback) {
+        db = _db;
+
+        var collection_init = db.collection("init");
+        collection_init.find({ kind: "use" }).next(function(err, init) {
+            callback(err, init);
+        });
+    };
+
+    async.waterfall([
+        mongo.connect_async,
+        getInit
+    ], function(err, init) {
+
+        db.close();
+
+        if (err) {
+            console.log("\n\n", "mp", 235, "err:\n", err);
+            res.send("服务器连接错误，请稍后再试");
+        } else {
+            res.render("chat/mp_setInit_form.html", {
+                init: init
+            });
+        }
+    });
+});
+
+// 系统设置 - 处理表单提交
+router.post("/setInit/deal", function(req, res) {
+    var dataForm,
+        db;
+
+    // 获得表单数据
+    var getForm = function(callback) {
+
+        dataForm = {
+            mp_user: req.body["mp_user"] || "",
+            mp_passwd: req.body["mp_passwd"] || "",
+            highlights_regExp: req.body["highlights_regExp[]"] || []
+        };
+
+        if (dataForm.mp_passwd === "")
+            delete dataForm.mp_passwd;
+        else
+            dataForm.mp_passwd = func.CreateHash(dataForm.mp_passwd, "sha1", 1);
+
+        if (typeof dataForm.highlights_regExp == "string")
+            dataForm.highlights_regExp = [dataForm.highlights_regExp];
+
+        callback(null);
+    };
+
+    // 执行修改
+    var dealModify = function(_db, callback) {
+        db = _db;
+
+        var collection_init = db.collection("init");
+
+        collection_init.updateOne({ kind: "use" }, { $set: dataForm }, function(err) {
+            callback(err);
+        });
+    };
+
+    async.waterfall([
+        getForm,
+        mongo.connect_async,
+        dealModify
+    ], function(err) {
+
+        db.close();
+
+        if (err) {
+            console.log("\n\n", "mp", 275, "err:\n", err);
+            res.send("err");
+        } else {
+            getRecord_handle.init_highlightsRegExp = null;
+            res.send("success");
+        }
+    });
+});
+
 // 根据cid和sid获得会话记录，并返回html代码
 router.post("/getRecords", function(req, res) {
 
-    getRecord_handle.getRecords(req, res);
+    getRecord_handle.getRecords(req, res, null, true);
 
 });
 
