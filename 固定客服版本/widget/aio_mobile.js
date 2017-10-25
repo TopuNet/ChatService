@@ -18,6 +18,8 @@ var mobile_stop_moved = {
         };
         opt = $.extend(opt_default, opt);
 
+        // console.log("here");
+
         // 默认阻止
         $(window).on("touchmove", function(e) {
             e.preventDefault();
@@ -34,7 +36,7 @@ var mobile_stop_moved = {
             });
             var clientY_start;
 
-            $(window).on("touchstart", function(e) {
+            $(window).unbind().on("touchstart", function(e) {
                 var touches = e.touches || e.originalEvent.touches;
                 clientY_start = touches[0].clientY;
             });
@@ -219,7 +221,7 @@ define('modules/mobile_end_init',[
     $landscape_mask.init();
 });
 /*
-    1.0.10
+    1.0.15
     高京
     2016-08-29
     JS类库
@@ -239,6 +241,29 @@ var functions = {
             });
         });
     },
+
+    /*
+        高京
+        2017-10-25
+        过滤表单非法字符
+        @str: 需要过滤的字符串
+    */
+    convers: function(str) {
+
+        var result = str;
+
+        var regExp = new RegExp("\'", "ig");
+        result = result.replace(regExp, "&acute;");
+
+        regExp = new RegExp("\<", "ig");
+        result = result.replace(regExp, "&lt;");
+
+        regExp = new RegExp("\"", "ig");
+        result = result.replace(regExp, "&quot;");
+
+        return result;
+    },
+
     /*
         高京
         2017-08-02
@@ -289,24 +314,57 @@ var functions = {
         2017-08-02
         解决ios端fixed居底input被键盘遮挡的问题
         @dom_selector: 监听focus和blur的Dom的选择器
+        @autocheck: true|false。自动执行innerHeight的改变监听，解决h5页面input.focus()后不能进入.on("focus")的handler的问题。默认false
     */
-    fix_ios_fixed_bottom_input: function(dom_selector) {
+    fix_ios_fixed_bottom_input: function(dom_selector, autocheck) {
 
-        // 安卓orIOS
-        // var device;
-        if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-            // device = "ios";
+        autocheck = autocheck || false;
+
+        // IOS版本（安卓则直接退出）
+        var regExp = new RegExp(/.+os (\w+?)_\w+_\w+ like mac os x.+ /ig),
+            iosEdition = regExp.exec(navigator.userAgent);
+
+        if (iosEdition) {
+            iosEdition = parseInt(iosEdition[1]);
         } else {
             return;
         }
 
         var footer_input = $(dom_selector);
+        var interval,
+            window_innerHeight_px,
+            _window_innerHeight_px;
 
-        footer_input.focus(function() {
-            setTimeout(function() {
+        var exec = function() {
+
+            _window_innerHeight_px = window.innerHeight;
+
+            // var dt = new Date();
+            // footer_input.val(dt.getTime() + ":" + window_innerHeight_px + " : " + _window_innerHeight_px);
+
+            // 如果innerHeight变化，或者ios版本小于11（ios10 首先innerHeight不会有变化，其次在执行下面代码时，不会有屏闪，所以持续interval除了性能，没有问题）
+            if (window_innerHeight_px != _window_innerHeight_px || iosEdition < 11) {
                 document.body.scrollTop = document.body.scrollHeight; //获取焦点后将浏览器内所有内容高度赋给浏览器滚动部分高度
-            }, 1500);
+                window_innerHeight_px = _window_innerHeight_px;
+            }
+        };
+
+        // 初始化window_innerHeight_px，开始interval
+        var focus_handler = function() {
+            window_innerHeight_px = 0;
+            interval = setInterval(function() {
+                exec();
+            }, 1000);
+        }
+
+        footer_input.on("focus", focus_handler);
+
+        footer_input.on("blur", function() {
+            clearInterval(interval);
         });
+
+        if (autocheck)
+            focus_handler();
     },
     /*
         高京
@@ -404,10 +462,13 @@ var functions = {
                 if (opt.callback)
                     opt.callback();
                 return;
-            } else
-                setTimeout(function() {
-                    set_scrollTop();
-                }, perTime);
+            } else {
+                var stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + $(window).height() >= obj[0].scrollHeight);
+                if (!stop_toDown_bool)
+                    setTimeout(function() {
+                        set_scrollTop();
+                    }, perTime);
+            }
         };
 
         set_scrollTop();
@@ -2770,7 +2831,7 @@ define('app/chat_list',[
                 var chat_line = $(".chat_line.sid_" + sid);
 
                 chat_line.find(".last_time").text($func.dateFormat_wx(rdate));
-                chat_line.find(".last_content").text(msg);
+                chat_line.find(".last_content").html(msg);
                 chat_line.addClass("new");
 
                 // 不在顶部，则移动至顶部
@@ -2907,6 +2968,680 @@ define('app/chat_list',[
     return chat_list;
 
 });
+// 2.3.1
+function RotatingBanner() {
+    return {
+        Timeout_id: null, // 记录定时器ID，清除时用
+        Rotating: false, // 记录当前是否在轮播
+        pointer_count: null, // 屏数量
+        pointer_now: 0, // 当前高亮圆点
+        box_width_px: null, // 外盒宽度，后续程序中获得
+        li_width_px: null, // li宽度（含margin），后续程序中获得
+        autoPlay: null, // 最原始传参的autoPlay（移动端touchend重启轮播用）
+        // 参数集
+        paras: {
+            effect: null, // 过渡效果。move-横向移动；fade-淡出。默认 "move"
+            mobile_effect: null, // 移动端效果：touchstart暂停、touchend重启并判断touchmove-x距离决定是否左右滑屏1次。effect=move时有效。默认false
+            mobile_effect_touchmove_distance_vw: null, // 采用移动端效果时，监听触摸滑屏的起效距离，单位vw，默认30
+            autoPlay: null, // 自动播放：left/right/null，默认值：null。effect=move时，left和right效果一致
+            box_selector: null, // 外盒选择器，默认值：section.banner
+            pic_ul_selector: null, // 图片li的ul盒选择器，此盒必须存在于box_selector中，且值中不用包含box_selector。默认值：ul.pic_ul
+            pic_li_selector: null, // 图片li的选择器，此盒必须存在于pic_ul_selector中，且值中不用包含pic_ul_selector。解决li中含有子li的问题。默认值: li
+            point_ul_selector: null, // 圆点li的ul盒选择器，空字符串为无圆点。此盒不必存在于box_selector中。默认值：section.banner ul.point_ul。
+            point_autoCreate: null, // 自动生成圆点，默认值：false
+            point_li_selected_className: null, // 圆点高亮li的className，默认值：selected
+            arrow_left_selector: null, // 左箭头的盒选择器，此盒不必存在于box_selector中。null为无左箭头。默认值：null
+            arrow_right_selector: null, // 右箭头的盒选择器，此盒不必存在于box_selector中。null为无右箭头。默认值：null
+            duration: null, // 动画过渡时间，毫秒。默认500
+            resize_li: null, // 自动改变li的宽高为外盒的宽高，默认true
+            distance: null, // 自动轮播和圆点点击时，滚动距离：distance个li；不为1时，只支持单行多列平铺的li。默认为1。
+            delay: null // 动画间隔，毫秒。默认5000
+        },
+        init: function(_paras) {
+
+            var paras_default = {
+                effect: "move",
+                mobile_effect: false,
+                mobile_effect_touchmove_distance_vw: 30,
+                autoPlay: null,
+                box_selector: "section.banner",
+                pic_ul_selector: "ul.pic_ul",
+                pic_li_selector: "li",
+                point_ul_selector: "section.banner ul.point_ul",
+                point_autoCreate: false,
+                point_li_selected_className: "selected",
+                arrow_left_selector: null,
+                arrow_right_selector: null,
+                duration: 500,
+                resize_li: true,
+                distance: 1,
+                delay: 5000
+            };
+            this.paras = $.extend(paras_default, _paras);
+            _paras = this.paras;
+            this.autoPlay = _paras.autoPlay;
+
+            if (_paras.effect == "fade")
+                console.dir(_paras);
+
+            if (this.paras.effect == "fade") {
+                this.paras.mobile_effect = false;
+                this.paras.distance = 1;
+            }
+
+            // 屏数量
+            var pointer_count = $(_paras.box_selector + " " + _paras.pic_ul_selector + " " + _paras.pic_li_selector).length;
+            this.pointer_count = parseInt(pointer_count / _paras.distance);
+            if (pointer_count % _paras.distance !== 0)
+                this.pointer_count++;
+
+            // 创建圆点
+            if (_paras.point_autoCreate) {
+                var pointer_ul = $(_paras.point_ul_selector);
+                var pointer_li = $(document.createElement("li"));
+                var _i = 0;
+                pointer_ul.html("");
+                for (; _i < this.pointer_count; _i++) {
+                    pointer_li.clone().appendTo(pointer_ul);
+                }
+            }
+
+            // 监听重置窗口大小
+            this.resize();
+
+            if (this.pic_length > 1) {
+                // 监听圆点
+                if (_paras.point_ul_selector !== "")
+                    this.PointListener();
+
+                // 监听左箭头
+                if (_paras.arrow_left_selector)
+                    this.arrowLeftListener();
+
+                // 监听右箭头
+                if (_paras.arrow_right_selector)
+                    this.arrowRightListener();
+
+                // 轮播
+                if (_paras.autoPlay)
+                    this.preRotating(_paras.autoPlay.toLowerCase());
+
+                // 移动端效果
+                if (_paras.mobile_effect)
+                    this.MobileEffectListen();
+            }
+        },
+
+        // 监听重置窗口大小
+        resize: function() {
+            var n = 0; // 解决某些浏览器resize执行两遍的bug
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var box_obj = $(_paras.box_selector); // 盒对象
+            var pic_ul_obj = $(box_obj.find(_paras.pic_ul_selector)); // 图片ul对象
+            var pic_li_obj = $(box_obj.find(_paras.pic_ul_selector + " " + _paras.pic_li_selector)); // 图片li对象
+
+            this_obj.pic_length = pic_li_obj.length;
+
+            $(window).resize(function() {
+                if (++n % 2 === 0)
+                    return;
+                resize_do();
+            });
+
+            var resize_do = function() {
+
+                var box_width_px = _paras.box_width_px = $.outerWidth ? box_obj.outerWidth() : box_obj.width();
+                var box_height_px = _paras.box_height_px = $.outerHeight ? box_obj.outerHeight() : box_obj.height();
+
+                setTimeout(function() {
+                    if (_paras.resize_li) {
+
+
+                        if (this_obj.pic_length < 1) // 没有li则不往下执行
+                            return;
+                        pic_li_obj.css("width", box_width_px + "px");
+                        pic_li_obj.css("height", box_height_px + "px");
+                    }
+
+                    if (pic_li_obj.length === 0)
+                        this_obj.li_width_px = 0;
+                    else {
+                        var _li_obj = $($(_paras.box_selector + " " + _paras.pic_ul_selector + " " + _paras.pic_li_selector)[0]);
+                        this_obj.li_width_px = parseFloat(_li_obj.css("width").replace("px", "")) + parseFloat(_li_obj.css("margin-left").replace("px", "")) + parseFloat(_li_obj.css("margin-right").replace("px", ""));
+                    }
+
+                    var ul_width_px = this_obj.li_width_px;
+
+                    if (_paras.effect == "move")
+                        ul_width_px *= pic_li_obj.length;
+
+                    pic_ul_obj.css("width", ul_width_px + "px");
+
+                    n = 0;
+
+                }, 0);
+
+            };
+
+            resize_do(this_obj);
+        },
+
+        // 轮播准备
+        // direct：left/right
+        preRotating: function(direct) {
+            var this_obj = this;
+            clearTimeout(this_obj.Timeout_id);
+
+            // 渐进淡出
+            if (this_obj.paras.effect == "fade") {
+                this_obj.Timeout_id = setTimeout(function() {
+                    if (this_obj.paras.autoPlay)
+                        this_obj.fadeToNext();
+                }, this_obj.paras.delay);
+                return;
+            }
+
+            // 左右滑屏
+            var switch_left_default = function() {
+                this_obj.Timeout_id = setTimeout(function() {
+                    if (this_obj.paras.autoPlay) {
+                        this_obj.scrollToLeft();
+                    }
+                }, this_obj.paras.delay);
+            };
+            switch (direct.toLowerCase()) {
+                case "left":
+                    switch_left_default();
+                    break;
+                default:
+                    switch_left_default();
+                    break;
+                case "right":
+                    this_obj.Timeout_id = setTimeout(function() {
+                        if (this_obj.paras.autoPlay)
+                            this_obj.scrollToRight();
+                    }, this_obj.paras.delay);
+                    break;
+            }
+        },
+
+        // 渐进淡出 X张
+        fadeToNext: function(X) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = this_obj.paras.distance;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+            var li_obj = ul_obj.find(_paras.pic_li_selector);
+            var li_length = li_obj.length;
+            var li_obj_last = li_obj.last();
+
+            if (X >= li_length)
+                X = li_length - 1;
+
+            if (X === 1) {
+                li_obj = li_obj_last;
+            } else {
+                li_obj = ul_obj.find(_paras.pic_li_selector + ":gt(" + (li_length - X - 1) + ")");
+
+                var i = 0;
+                li_length = li_obj.length;
+
+                for (; i < li_length - 1; i++)
+                    $(li_obj[i]).css({
+                        display: "none"
+                    });
+            }
+
+            // console.log(li_obj.length);
+
+            // 切换
+            this_obj.setFadeTo.apply(this_obj, [li_obj, this_obj.paras.duration, function(_this_obj, _li_obj) {
+
+                _li_obj.prependTo(ul_obj).css({
+                    "opacity": "1",
+                    "display": "block"
+                });
+
+
+                // 切换圆点
+                _this_obj.pointer_now += X;
+                if (_this_obj.pointer_now >= _this_obj.pointer_count) {
+                    _this_obj.pointer_now -= _this_obj.pointer_count;
+                }
+                _this_obj.changePoint();
+
+                _this_obj.Rotating = false;
+
+                // 再次执行滚动（如autoPlay不为null）
+                if (_this_obj.paras.autoPlay)
+                    _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+
+            }]);
+        },
+
+        // 向左滚X屏和Y个圆点位
+        scrollToLeft: function(X, Y) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = _paras.distance;
+            if (!Y)
+                Y = 1;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+
+            // 计算滚动后的left值
+            var ul_left_px_new = -X * this_obj.li_width_px;
+
+            // 执行滚动
+            this_obj.setTranslate.apply(this_obj, [ul_obj, _paras.duration, ul_left_px_new, function(_this_obj, ul_obj) {
+
+                var li_obj = ul_obj.find(_paras.pic_li_selector);
+                var i = 0;
+                for (; i < X; i++) {
+                    $(li_obj[i]).appendTo(ul_obj);
+                }
+                _this_obj.setTranslate.apply(_this_obj, [ul_obj, 0, 0]);
+
+                // 切换pointer_now和pointer_now
+                _this_obj.pointer_now += Y;
+                if (_this_obj.pointer_now >= _this_obj.pointer_count) {
+                    _this_obj.pointer_now = 0;
+                }
+
+                // 切换圆点
+                _this_obj.changePoint();
+
+                _this_obj.Rotating = false;
+
+                // 再次执行滚动（如autoPlay不为null）
+                if (_this_obj.paras.autoPlay)
+                    _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+
+
+            }]);
+        },
+
+        // 向右滚X屏和Y个圆点位
+        scrollToRight: function(X, Y) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = _paras.distance;
+            if (!Y)
+                Y = 1;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+
+            var li_obj = $(ul_obj.find(_paras.pic_li_selector));
+            var li_obj_len = li_obj.length;
+
+            var i = 0;
+            for (; i < X; i++)
+                $(li_obj[li_obj_len - (i + 1)]).prependTo(ul_obj);
+
+            this_obj.setTranslate.apply(this_obj, [ul_obj, 0, -X * this_obj.li_width_px]);
+
+            setTimeout(function() {
+                this_obj.setTranslate.apply(this_obj, [ul_obj, _paras.duration, 0, function(_this_obj) {
+
+                    // 切换pointer_now
+                    _this_obj.pointer_now -= Y;
+                    if (_this_obj.pointer_now < 0) {
+                        _this_obj.pointer_now = _this_obj.pointer_count - 1;
+                    }
+
+                    // 切换圆点
+                    _this_obj.changePoint();
+
+                    _this_obj.Rotating = false;
+
+                    // 再次执行滚动（如autoPlay不为null）
+                    if (_this_obj.paras.autoPlay)
+                        _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+                }]);
+            }, 0);
+        },
+
+        // 切换圆点高亮
+        changePoint: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var obj = $(_paras.point_ul_selector + " li");
+            obj.siblings("." + _paras.point_li_selected_className).removeClass(_paras.point_li_selected_className);
+            $(obj[this_obj.pointer_now]).addClass(_paras.point_li_selected_className);
+        },
+
+        // 监听圆点
+        PointListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var obj = $(_paras.point_ul_selector + " li");
+            $(obj[0]).addClass(_paras.point_li_selected_className);
+            obj.on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                var n = $(this).index();
+                if (n == this_obj.pointer_now)
+                    return;
+
+                // clearTimeout();
+
+                if (_paras.effect == "move") {
+                    if (n < this_obj.pointer_now)
+                        this_obj.scrollToRight((this_obj.pointer_now - n) * _paras.distance, this_obj.pointer_now - n);
+                    if (n > this_obj.pointer_now)
+                        this_obj.scrollToLeft((n - this_obj.pointer_now) * _paras.distance, n - this_obj.pointer_now);
+                } else if (_paras.effect == "fade") {
+                    var X = n - this_obj.pointer_now;
+                    if (X < 0)
+                        X += obj.length;
+                    this_obj.fadeToNext(X);
+                }
+            });
+        },
+
+        // 监听左箭头
+        arrowLeftListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            $(_paras.arrow_left_selector).on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                this_obj.scrollToRight();
+            });
+        },
+
+        // 监听右箭头
+        arrowRightListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            $(_paras.arrow_right_selector).on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                this_obj.scrollToLeft();
+            });
+        },
+
+        // 暂停自动播放
+        Pause: function() {
+            this.paras.autoPlay = null;
+        },
+
+        // 重启自动播放
+        reStart: function(direction) {
+            if (!this.paras.autoPlay) {
+                this.paras.autoPlay = direction || "left";
+                this.preRotating(this.paras.autoPlay);
+            }
+        },
+
+        // 移动端效果监听
+        MobileEffectListen: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var pic_ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+            var touchstart_x;
+            var touchend_x;
+            var window_width_px = $(window).width();
+
+            // touchstart
+            pic_ul_obj.on("touchstart", function(event) {
+                touchstart_x = event.touches[0].clientX;
+                touchend_x = null;
+                this_obj.Pause();
+            });
+
+            // touchmove
+            pic_ul_obj.on("touchmove", function(event) {
+                touchend_x = event.touches[0].clientX;
+            });
+
+            // touchend
+            pic_ul_obj.on("touchend", function() {
+                if(!touchend_x)
+                    return;
+
+                var distance_vw = (touchend_x - touchstart_x) / window_width_px * 100;
+                var duration = 0;
+
+                // 验证横向位移是否超过阈值
+                if (distance_vw >= _paras.mobile_effect_touchmove_distance_vw || distance_vw <= -_paras.mobile_effect_touchmove_distance_vw) {
+
+                    duration = _paras.duration;
+
+                    if (distance_vw < 0)
+                        this_obj.scrollToLeft();
+                    else {
+                        this_obj.scrollToRight();
+                    }
+                }
+
+                if (this_obj.autoPlay)
+                    setTimeout(function() {
+                        this_obj.reStart(this_obj.autoPlay);
+                    }, duration);
+
+            });
+        },
+
+        // 设置translate-x样式
+        // obj: 设置对象
+        // duration: 动画时间，毫秒数
+        // x: translate-x值
+        // callback: 完成回调
+        setTranslate: function(obj, duration, x, callback) {
+            var this_obj = this;
+
+            // 判断
+            var transition = obj[0].style.transition;
+            if (transition === undefined || transition === null) {
+
+                obj.animate({
+                    left: x + "px"
+                }, duration, function() {
+                    if (callback)
+                        callback(this_obj, obj);
+                });
+
+            } else {
+
+                obj.css({
+                    "transition": "all " + duration * 0.001 + "s linear",
+                    "transform": "translateX(" + x + "px)",
+                    "-webkit-transform": "translateX(" + x + "px)",
+                    "-moz-transform": "translateX(" + x + "px)",
+                    "-o-transform": "translateX(" + x + "px)",
+                    "-ms-transform": "translateX(" + x + "px)"
+                });
+
+                if (callback) {
+                    setTimeout(function() {
+                        callback(this_obj, obj);
+                    }, duration);
+                }
+            }
+        },
+
+        // 设置透明度样式
+        // obj: 设置对象
+        // duration: 动画时间，毫秒数
+        // callback: 完成回调
+        setFadeTo: function(obj, duration, callback) {
+
+            var this_obj = this;
+
+            // 判断
+            var transition = obj[0].style.transition;
+
+            if (transition === undefined || transition === null) {
+                obj.last().fadeOut(duration, function() {
+                    if (callback) {
+                        callback(this_obj, obj);
+                    }
+                });
+            } else {
+
+                // obj.one("transitionend", function() {
+                //     // obj.css("transition", "none");
+                //     console.log("here");
+                //     if (callback)
+                //         callback(this_obj, obj);
+                // });
+
+
+                obj.css({
+                    "transition": "opacity " + duration * 0.001 + "s linear",
+                    "opacity": 0
+                });
+
+                if (callback) {
+                    setTimeout(function() {
+
+                        if (callback)
+                            callback(this_obj, obj);
+                    }, duration);
+                }
+            }
+        }
+    };
+}
+
+if (typeof define === "function" && define.amd) {
+    define('lib/RotatingBanner',[],function() {
+        return RotatingBanner;
+    });
+};
+/*
+    表情面板相关js
+    执行$obj.init(opt)启动
+    @opt: {
+        device: "mobile" | "pc",
+        box_selector: 外盒选择器，默认值：.emotion_box,
+        pic_ul_selector: 图片li的ul盒选择器，此盒必须存在于box_selector中，且值中不用包含box_selector。默认值：.emotion_panel,
+        point_ul_selector: 圆点li的ul盒选择器，空字符串为无圆点。此盒不必存在于box_selector中。默认值：.emotion_box .point_li
+    }
+
+    that = {
+        opt: 参数
+    }
+*/
+
+define('modules/emotion',["lib/RotatingBanner"], function($rb) {
+    var emotion = {
+        init: function(opt) {
+            var that = this;
+
+            // 处理opt
+            that.opt_deal.apply(that, [opt]);
+
+            // 设置pic_ul_selector的宽度
+            that.set_picUlSelector_width.apply(that);
+
+            // 监听左右划屏轮播
+            that.Rotating_Listener.apply(that);
+        },
+
+        // 处理opt
+        opt_deal: function(opt) {
+
+            var that = this;
+
+            var opt_default = {
+                mobile_effect: true,
+                box_selector: ".emotion_box",
+                pic_ul_selector: ".emotion_panel",
+                point_ul_selector: ".emotion_box .point_ul",
+                pic_li_selector: "li.screen_li",
+                point_autoCreate: true,
+                duration: 200,
+                resize_li: false,
+                mobile_effect_touchmove_distance_vw: 10
+            };
+
+            that.opt = $.extend(opt_default, opt);
+        },
+
+        // 设置pic_ul_selector的宽度
+        set_picUlSelector_width: function() {
+            var that = this;
+
+            var panel = $(that.opt.pic_ul_selector),
+                ul = panel.find("ul"),
+                window_width_px = $(window).width();
+
+            panel.css({
+                width: ul.length * window_width_px + "px"
+            });
+        },
+
+        // 监听左右划屏轮播
+        Rotating_Listener: function() {
+
+            var that = this;
+
+            var RotatingBanner_1 = new $rb();
+            RotatingBanner_1.init(that.opt);
+        },
+
+        // 更换表情，返回msg
+        emotion_filter: function(msg) {
+
+            // 基础正则
+            var regExp_base_str = "(\\[.+?\\])";
+
+            // 扩展正则，出现在基础正则前面
+            var regExp_ext_str = "";
+
+            // 正则条件对象
+            var regExp = new RegExp("()" + regExp_base_str);
+
+            var result,
+                name_index;
+            var replace_callback = function(m, $1) {
+                return (function() {
+                    return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+                })();
+            };
+            while (true) {
+                result = regExp.exec(msg);
+
+
+                // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+                if (!result)
+                    break;
+
+
+                name_index = comm_emotion.emotion_name_list.indexOf(result[2]);
+
+                // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+                if (name_index == -1) {
+                    regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
+                    regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+                } else {
+                    msg = msg.replace(regExp, replace_callback);
+                }
+            }
+
+            return msg;
+        }
+    };
+
+    return emotion;
+});
 /*
     Chat 配套js文件
     高京
@@ -2924,11 +3659,13 @@ define('app/chat_list',[
 define('app/chat',[
     "lib/socket.io.min",
     "lib/functions",
-    "modules/footer_button_mute"
+    "modules/footer_button_mute",
+    "modules/emotion"
 ], function(
     $io,
     $func,
-    $footer_button_mute
+    $footer_button_mute,
+    $emotion
 ) {
     var chat = {
         RECORD_COUNT: 10, // 一次读取的记录条数
@@ -3035,20 +3772,68 @@ define('app/chat',[
             }, 500);
         },
 
-        // 处理服务器端渲染err，无err则执行socket_connect⬇️
+        // 设置底部input盒高度
+        set_messageContent_height: function() {
+
+            var footer_button = $(".footer_button"),
+                submit_height_px = parseFloat(footer_button.find(".weui-btn_primary").css("line-height").replace("px", ""));
+
+            footer_button.find(".message_content_box,.message_content_div,.message_content_input").css({
+                "height": submit_height_px + "px",
+                "line-height": submit_height_px + "px"
+            });
+            footer_button.find(".message_content_box").css("display", "block");
+        },
+
+        // 监听底部input盒
+        messageContentBox_Listener: function() {
+            var that = this;
+
+            var message_content_box = $(".message_content_box"),
+                message_div = message_content_box.find(".message_content_div"),
+                message_input = message_content_box.find(".message_content_input");
+
+            message_content_box.unbind().on("click", function() {
+                message_div.css("display", "none");
+                message_input.css("display", "block");
+            });
+        },
+
+        // 监听底部input值改变
+        messageContentInput_change_Listener: function() {
+
+            var message_content_box = $(".message_content_box"),
+                message_div = message_content_box.find(".message_content_div"),
+                message_input = message_content_box.find(".message_content_input");
+
+            message_input.unbind("change").on("change", function() {
+                message_div.text(message_input.val());
+            });
+        },
+
+        // 处理服务器端渲染err，无err则执行socket_connect⬇
         deal_err: function() {
             var that = this;
 
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1"
+                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1";
                 });
             } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
                     location.href = "list";
                 });
             } else {
+
+                // 设置底部input高度
+                that.set_messageContent_height.apply(that);
+
+                // 监听底部input盒
+                that.messageContentBox_Listener.apply(that);
+
+                // 监听底部input值改变
+                that.messageContentInput_change_Listener.apply(that);
 
                 // 判断是否需要显示“查看更多历史消息”
                 that.jduge_show_more_records.apply(that);
@@ -3073,6 +3858,17 @@ define('app/chat',[
 
                 // 监听返回按钮
                 that.back_button_Listener.apply(that);
+
+                // 监听表情和键盘按钮
+                that.emotion_button_Listener.apply(that);
+
+                // 监听表情面板
+                $emotion.init.apply($emotion, [{
+                    device: "mobile"
+                    // box_selector: 外盒选择器， 默认值：.emotion_box,
+                    // pic_ul_selector: 图片li的ul盒选择器， 此盒必须存在于box_selector中， 且值中不用包含box_selector。 默认值： ul,
+                    // point_ul_selector: 圆点li的ul盒选择器， 空字符串为无圆点。 此盒不必存在于box_selector中。 默认值：.emotion_box.point_li
+                }]);
             }
         },
 
@@ -3198,6 +3994,11 @@ define('app/chat',[
 
             }
 
+            // 如果非系统消息，做内容的表情过滤
+            if (kind > 1) {
+                msg = $emotion.emotion_filter(msg);
+            }
+
             // 装载内容
             li.find("p").html("<span class=\"arrow\"></span>" + msg);
 
@@ -3275,7 +4076,8 @@ define('app/chat',[
         form_send_submit_Listener: function() {
             var that = this;
             var form = $(".footer_button form");
-            var input = form.find(".message_content");
+            var input_div = form.find(".message_content_div");
+            var input = form.find(".message_content_input");
 
             form.unbind().on("submit", function(e) {
                 e.preventDefault();
@@ -3286,8 +4088,9 @@ define('app/chat',[
                 if (text === "") {
                     that.show_error_dialog("请键入内容");
                 } else {
-                    that.send_message.apply(that, [2, text, Base_meta.cid, Base_meta.sid]);
+                    that.send_message.apply(that, [2, $func.convers(text), Base_meta.cid, Base_meta.sid]);
                     input.val("");
+                    input_div.text("");
                 }
             });
         },
@@ -3296,6 +4099,134 @@ define('app/chat',[
         back_button_Listener: function() {
             $(".footer_button .back").unbind().on("click", function() {
                 location.href = "/?cid=" + Base_meta.cid.toString();
+            });
+        },
+
+        // 重置wrapper_fixed_space高度
+        wrapper_fixed_space_reset_height: function() {
+
+            var that = this;
+            var footer_button = $(".footer_button");
+
+            var footer_button_height_px = footer_button.height(),
+                fixed_space = $(".fixed_space");
+
+            fixed_space.css("height", footer_button_height_px + "px");
+
+            that.rollToBottom.apply(that);
+        },
+
+        // 监听表情和键盘按钮
+        emotion_button_Listener: function() {
+            var that = this;
+            var footer_button = $(".footer_button");
+
+            var footer_input_box = footer_button.find(".message_content_box");
+            var footer_input_div = footer_button.find(".message_content_div");
+            var footer_input = footer_button.find(".message_content_input");
+
+            // that.send_message(1, "438:innerHeight:" + window.innerHeight);
+            // setInterval(function() {
+            //     that.send_message(1, "440:innerHeight:" + window.innerHeight);
+            // }, 1000);
+
+            // 收起表情面板，让input显示并获得焦点
+            var setInputEnableFocus = function() {
+
+                $(".footer_button").removeClass("showEmotion");
+                // footer_input.removeAttr("disabled");
+                footer_input_div.css("display", "none");
+                footer_input.css("display", "block").focus();
+                $func.fix_ios_fixed_bottom_input(".footer_button", true);
+            };
+
+            footer_button.find(".emotion").unbind().on("click", function() {
+
+                if (footer_button.hasClass("showEmotion")) {
+                    setInputEnableFocus();
+                } else {
+
+                    // 展开footer_button
+                    $(".footer_button").addClass("showEmotion");
+
+                    // 切换footer_input的显示
+                    footer_input.css("display", "none");
+                    footer_input_div.css("display", "block");
+
+                    // 监听input_box的点击
+                    footer_input_box.unbind().on("click", function() {
+                        setInputEnableFocus();
+                    });
+
+                    // 在滑动footer_button时，禁止滑动stoped_wrapper
+                    $(window).on("touchmove", function(e) {
+                        var touch_footer = $(e.target).parents(".footer_button").length > 0;
+                        if (touch_footer) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    });
+
+                    // 监听表情点击
+                    that.emotion_Listener.apply(that);
+                }
+
+            });
+
+            footer_button.unbind().on("webkitTransitionEnd transitionEnd", function(e) {
+
+                e.preventDefault();
+
+                // 重置wrapper_fixed_space高度
+                that.wrapper_fixed_space_reset_height.apply(that);
+
+            });
+        },
+
+        // 监听表情点击
+        emotion_Listener: function() {
+
+            var footer_button = $(".footer_button"),
+                emotion_button = footer_button.find(".screen_li li:not(.space)"),
+                input = footer_button.find(".message_content_input"),
+                input_div = footer_button.find(".message_content_div");
+
+            emotion_button.unbind().on("click", function() {
+                var _this = $(this);
+
+                var text_value = input.val();
+
+                if (_this.hasClass("del")) {
+                    if (text_value.length === 0)
+                        return;
+
+                    var regRex = new RegExp(/^.*(\[.+?\])$/ig);
+
+                    var result = regRex.exec(text_value);
+
+                    var exec_del_charactor = function() {
+                        text_value = text_value.substring(0, text_value.length - 1);
+                    };
+
+                    if (result) {
+                        if (comm_emotion.emotion_name_list &&
+                            comm_emotion.emotion_name_list.length &&
+                            comm_emotion.emotion_name_list.indexOf(result[1]) > -1) {
+                            text_value = text_value.substring(0, text_value.length - result[1].length);
+                        } else {
+                            exec_del_charactor();
+                        }
+                    } else {
+                        exec_del_charactor();
+                    }
+
+                    input.val(text_value);
+                    input_div.text(text_value);
+
+                } else {
+                    input.val(text_value + _this.attr("name"));
+                    input_div.text(input.val());
+                }
             });
         }
     };

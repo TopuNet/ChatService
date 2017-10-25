@@ -23,15 +23,20 @@
             <form>
                 <span class="back"></span>
                 <span class="mute"></span>
-                <input type="text" class="message_content">
+                <div class="message_content_box">
+                    <div class="message_content_div"></div>
+                    <input type="text" class="message_content_input">
+                </div>
                 <input type="submit" value="发送" class="weui-btn weui-btn_mini weui-btn_primary">
+                <span class="more"></span>
+                <span class="emotion"></span>
             </form>
+            <% include comm_emotion.html %>
         </div>
         <% } %>
             <% include ../weui.html %>
                 <script src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
                 <script>
-
                 wx.config({
                     debug: false,
                     appId: '',

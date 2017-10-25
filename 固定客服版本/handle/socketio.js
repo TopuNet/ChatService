@@ -11,6 +11,8 @@ var socket_io = require('socket.io'),
     // config = require('./config.js'),
     mongo = require("../handle/mongodb.js"),
     getRecords_handle = require("../handle/getRecords.js"),
+    emotion_handler = require("../handle/emotion.js"),
+    func = require("../handle/functions.js"),
     async = require("async");
 
 //获取io
@@ -183,7 +185,6 @@ var socketio = function() {
 
         // 监听内容发送
         socket_send_message_Listener: function(socket) {
-            var that = this;
 
             // sender"c"-客户消息 "s"-客服消息 "o"-系统消息
             socket.on("send_message", function(msg, sender, cid, sid, _rdate) {
@@ -199,7 +200,12 @@ var socketio = function() {
 
                 var db;
                 var rdate = new Date(_rdate);
-                var risk; // 内容风险 true | false
+
+                // 过滤msg的非法字符
+                var convers_msg = function(callback) {
+                    msg = func.convers(msg);
+                    callback(null);
+                };
 
                 // 更新chats表的has_noRead_record、last_timestamp、last_content和last_rdate
                 var update_last_time = function(_db, callback) {
@@ -243,6 +249,51 @@ var socketio = function() {
                         }
                     });
 
+                };
+
+                // 更换表情[服务端不换了先，原样保存，客户端解析]
+                var emotion_filter = function(callback) {
+
+                    // 基础正则
+                    var regExp_base_str = "(\\[.+?\\])";
+
+                    // 扩展正则，出现在基础正则前面
+                    var regExp_ext_str = "";
+
+                    // 正则条件对象
+                    var regExp = new RegExp("()" + regExp_base_str);
+
+                    var result,
+                        name_index;
+                    var replace_callback = function(m, $1) {
+                        return (function() {
+                            return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+                        })();
+                    };
+                    while (true) {
+                        result = regExp.exec(msg);
+
+
+                        // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+                        if (!result)
+                            break;
+
+
+                        name_index = emotion_handler.emotion_name_list.indexOf(result[2]);
+
+                        // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+                        if (name_index == -1) {
+                            regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
+                            regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+                        } else {
+                            msg = msg.replace(regExp, replace_callback);
+                        }
+                    }
+
+                    // console.log("\n\n", "socketio", 273, "msg:\n", msg);
+
+                    callback(null);
                 };
 
                 // 风险筛查
@@ -309,8 +360,10 @@ var socketio = function() {
 
                 // 执行async
                 async.waterfall([
+                    convers_msg,
                     mongo.connect_async,
                     update_last_time,
+                    // emotion_filter,
                     risk_match,
                     addRecord,
                     send_broadcast

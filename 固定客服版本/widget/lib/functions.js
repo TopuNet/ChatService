@@ -1,5 +1,5 @@
 /*
-    1.0.10
+    1.0.15
     高京
     2016-08-29
     JS类库
@@ -19,6 +19,29 @@ var functions = {
             });
         });
     },
+
+    /*
+        高京
+        2017-10-25
+        过滤表单非法字符
+        @str: 需要过滤的字符串
+    */
+    convers: function(str) {
+
+        var result = str;
+
+        var regExp = new RegExp("\'", "ig");
+        result = result.replace(regExp, "&acute;");
+
+        regExp = new RegExp("\<", "ig");
+        result = result.replace(regExp, "&lt;");
+
+        regExp = new RegExp("\"", "ig");
+        result = result.replace(regExp, "&quot;");
+
+        return result;
+    },
+
     /*
         高京
         2017-08-02
@@ -69,24 +92,57 @@ var functions = {
         2017-08-02
         解决ios端fixed居底input被键盘遮挡的问题
         @dom_selector: 监听focus和blur的Dom的选择器
+        @autocheck: true|false。自动执行innerHeight的改变监听，解决h5页面input.focus()后不能进入.on("focus")的handler的问题。默认false
     */
-    fix_ios_fixed_bottom_input: function(dom_selector) {
+    fix_ios_fixed_bottom_input: function(dom_selector, autocheck) {
 
-        // 安卓orIOS
-        // var device;
-        if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-            // device = "ios";
+        autocheck = autocheck || false;
+
+        // IOS版本（安卓则直接退出）
+        var regExp = new RegExp(/.+os (\w+?)_\w+_\w+ like mac os x.+ /ig),
+            iosEdition = regExp.exec(navigator.userAgent);
+
+        if (iosEdition) {
+            iosEdition = parseInt(iosEdition[1]);
         } else {
             return;
         }
 
         var footer_input = $(dom_selector);
+        var interval,
+            window_innerHeight_px,
+            _window_innerHeight_px;
 
-        footer_input.focus(function() {
-            setTimeout(function() {
+        var exec = function() {
+
+            _window_innerHeight_px = window.innerHeight;
+
+            // var dt = new Date();
+            // footer_input.val(dt.getTime() + ":" + window_innerHeight_px + " : " + _window_innerHeight_px);
+
+            // 如果innerHeight变化，或者ios版本小于11（ios10 首先innerHeight不会有变化，其次在执行下面代码时，不会有屏闪，所以持续interval除了性能，没有问题）
+            if (window_innerHeight_px != _window_innerHeight_px || iosEdition < 11) {
                 document.body.scrollTop = document.body.scrollHeight; //获取焦点后将浏览器内所有内容高度赋给浏览器滚动部分高度
-            }, 1500);
+                window_innerHeight_px = _window_innerHeight_px;
+            }
+        };
+
+        // 初始化window_innerHeight_px，开始interval
+        var focus_handler = function() {
+            window_innerHeight_px = 0;
+            interval = setInterval(function() {
+                exec();
+            }, 1000);
+        }
+
+        footer_input.on("focus", focus_handler);
+
+        footer_input.on("blur", function() {
+            clearInterval(interval);
         });
+
+        if (autocheck)
+            focus_handler();
     },
     /*
         高京
@@ -184,10 +240,13 @@ var functions = {
                 if (opt.callback)
                     opt.callback();
                 return;
-            } else
-                setTimeout(function() {
-                    set_scrollTop();
-                }, perTime);
+            } else {
+                var stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + $(window).height() >= obj[0].scrollHeight);
+                if (!stop_toDown_bool)
+                    setTimeout(function() {
+                        set_scrollTop();
+                    }, perTime);
+            }
         };
 
         set_scrollTop();

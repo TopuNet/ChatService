@@ -120,7 +120,7 @@ define([
                 var chat_line = $(".chat_line.sid_" + sid);
 
                 chat_line.find(".last_time").text($func.dateFormat_wx(rdate));
-                chat_line.find(".last_content").text(msg);
+                chat_line.find(".last_content").html(msg);
                 chat_line.addClass("new");
 
                 // 不在顶部，则移动至顶部

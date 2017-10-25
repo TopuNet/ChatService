@@ -58,8 +58,13 @@
             </ul>
         </div>
     </div>
-        <% include ../weui.html %>
-            <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat_mp_index"></script>
+    <% include ../weui.html %>
+        <script data-main="/widget/main.js" src="/inc/require.js" id="script_page" page="chat_mp_index"></script>
+        <script>
+        var comm_emotion = {
+            emotion_name_list : [<%-emotion_name_list%>]
+        };
+        </script>
 </body>
 
 </html>

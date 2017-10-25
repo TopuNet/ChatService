@@ -15,6 +15,8 @@ var mobile_stop_moved = {
         };
         opt = $.extend(opt_default, opt);
 
+        // console.log("here");
+
         // 默认阻止
         $(window).on("touchmove", function(e) {
             e.preventDefault();
@@ -31,7 +33,7 @@ var mobile_stop_moved = {
             });
             var clientY_start;
 
-            $(window).on("touchstart", function(e) {
+            $(window).unbind().on("touchstart", function(e) {
                 var touches = e.touches || e.originalEvent.touches;
                 clientY_start = touches[0].clientY;
             });

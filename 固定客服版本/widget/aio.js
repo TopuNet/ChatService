@@ -1702,6 +1702,680 @@ if (typeof define === "function" && define.amd) {
         return LayerShow;
     });
 };
+// 2.3.1
+function RotatingBanner() {
+    return {
+        Timeout_id: null, // 记录定时器ID，清除时用
+        Rotating: false, // 记录当前是否在轮播
+        pointer_count: null, // 屏数量
+        pointer_now: 0, // 当前高亮圆点
+        box_width_px: null, // 外盒宽度，后续程序中获得
+        li_width_px: null, // li宽度（含margin），后续程序中获得
+        autoPlay: null, // 最原始传参的autoPlay（移动端touchend重启轮播用）
+        // 参数集
+        paras: {
+            effect: null, // 过渡效果。move-横向移动；fade-淡出。默认 "move"
+            mobile_effect: null, // 移动端效果：touchstart暂停、touchend重启并判断touchmove-x距离决定是否左右滑屏1次。effect=move时有效。默认false
+            mobile_effect_touchmove_distance_vw: null, // 采用移动端效果时，监听触摸滑屏的起效距离，单位vw，默认30
+            autoPlay: null, // 自动播放：left/right/null，默认值：null。effect=move时，left和right效果一致
+            box_selector: null, // 外盒选择器，默认值：section.banner
+            pic_ul_selector: null, // 图片li的ul盒选择器，此盒必须存在于box_selector中，且值中不用包含box_selector。默认值：ul.pic_ul
+            pic_li_selector: null, // 图片li的选择器，此盒必须存在于pic_ul_selector中，且值中不用包含pic_ul_selector。解决li中含有子li的问题。默认值: li
+            point_ul_selector: null, // 圆点li的ul盒选择器，空字符串为无圆点。此盒不必存在于box_selector中。默认值：section.banner ul.point_ul。
+            point_autoCreate: null, // 自动生成圆点，默认值：false
+            point_li_selected_className: null, // 圆点高亮li的className，默认值：selected
+            arrow_left_selector: null, // 左箭头的盒选择器，此盒不必存在于box_selector中。null为无左箭头。默认值：null
+            arrow_right_selector: null, // 右箭头的盒选择器，此盒不必存在于box_selector中。null为无右箭头。默认值：null
+            duration: null, // 动画过渡时间，毫秒。默认500
+            resize_li: null, // 自动改变li的宽高为外盒的宽高，默认true
+            distance: null, // 自动轮播和圆点点击时，滚动距离：distance个li；不为1时，只支持单行多列平铺的li。默认为1。
+            delay: null // 动画间隔，毫秒。默认5000
+        },
+        init: function(_paras) {
+
+            var paras_default = {
+                effect: "move",
+                mobile_effect: false,
+                mobile_effect_touchmove_distance_vw: 30,
+                autoPlay: null,
+                box_selector: "section.banner",
+                pic_ul_selector: "ul.pic_ul",
+                pic_li_selector: "li",
+                point_ul_selector: "section.banner ul.point_ul",
+                point_autoCreate: false,
+                point_li_selected_className: "selected",
+                arrow_left_selector: null,
+                arrow_right_selector: null,
+                duration: 500,
+                resize_li: true,
+                distance: 1,
+                delay: 5000
+            };
+            this.paras = $.extend(paras_default, _paras);
+            _paras = this.paras;
+            this.autoPlay = _paras.autoPlay;
+
+            if (_paras.effect == "fade")
+                console.dir(_paras);
+
+            if (this.paras.effect == "fade") {
+                this.paras.mobile_effect = false;
+                this.paras.distance = 1;
+            }
+
+            // 屏数量
+            var pointer_count = $(_paras.box_selector + " " + _paras.pic_ul_selector + " " + _paras.pic_li_selector).length;
+            this.pointer_count = parseInt(pointer_count / _paras.distance);
+            if (pointer_count % _paras.distance !== 0)
+                this.pointer_count++;
+
+            // 创建圆点
+            if (_paras.point_autoCreate) {
+                var pointer_ul = $(_paras.point_ul_selector);
+                var pointer_li = $(document.createElement("li"));
+                var _i = 0;
+                pointer_ul.html("");
+                for (; _i < this.pointer_count; _i++) {
+                    pointer_li.clone().appendTo(pointer_ul);
+                }
+            }
+
+            // 监听重置窗口大小
+            this.resize();
+
+            if (this.pic_length > 1) {
+                // 监听圆点
+                if (_paras.point_ul_selector !== "")
+                    this.PointListener();
+
+                // 监听左箭头
+                if (_paras.arrow_left_selector)
+                    this.arrowLeftListener();
+
+                // 监听右箭头
+                if (_paras.arrow_right_selector)
+                    this.arrowRightListener();
+
+                // 轮播
+                if (_paras.autoPlay)
+                    this.preRotating(_paras.autoPlay.toLowerCase());
+
+                // 移动端效果
+                if (_paras.mobile_effect)
+                    this.MobileEffectListen();
+            }
+        },
+
+        // 监听重置窗口大小
+        resize: function() {
+            var n = 0; // 解决某些浏览器resize执行两遍的bug
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var box_obj = $(_paras.box_selector); // 盒对象
+            var pic_ul_obj = $(box_obj.find(_paras.pic_ul_selector)); // 图片ul对象
+            var pic_li_obj = $(box_obj.find(_paras.pic_ul_selector + " " + _paras.pic_li_selector)); // 图片li对象
+
+            this_obj.pic_length = pic_li_obj.length;
+
+            $(window).resize(function() {
+                if (++n % 2 === 0)
+                    return;
+                resize_do();
+            });
+
+            var resize_do = function() {
+
+                var box_width_px = _paras.box_width_px = $.outerWidth ? box_obj.outerWidth() : box_obj.width();
+                var box_height_px = _paras.box_height_px = $.outerHeight ? box_obj.outerHeight() : box_obj.height();
+
+                setTimeout(function() {
+                    if (_paras.resize_li) {
+
+
+                        if (this_obj.pic_length < 1) // 没有li则不往下执行
+                            return;
+                        pic_li_obj.css("width", box_width_px + "px");
+                        pic_li_obj.css("height", box_height_px + "px");
+                    }
+
+                    if (pic_li_obj.length === 0)
+                        this_obj.li_width_px = 0;
+                    else {
+                        var _li_obj = $($(_paras.box_selector + " " + _paras.pic_ul_selector + " " + _paras.pic_li_selector)[0]);
+                        this_obj.li_width_px = parseFloat(_li_obj.css("width").replace("px", "")) + parseFloat(_li_obj.css("margin-left").replace("px", "")) + parseFloat(_li_obj.css("margin-right").replace("px", ""));
+                    }
+
+                    var ul_width_px = this_obj.li_width_px;
+
+                    if (_paras.effect == "move")
+                        ul_width_px *= pic_li_obj.length;
+
+                    pic_ul_obj.css("width", ul_width_px + "px");
+
+                    n = 0;
+
+                }, 0);
+
+            };
+
+            resize_do(this_obj);
+        },
+
+        // 轮播准备
+        // direct：left/right
+        preRotating: function(direct) {
+            var this_obj = this;
+            clearTimeout(this_obj.Timeout_id);
+
+            // 渐进淡出
+            if (this_obj.paras.effect == "fade") {
+                this_obj.Timeout_id = setTimeout(function() {
+                    if (this_obj.paras.autoPlay)
+                        this_obj.fadeToNext();
+                }, this_obj.paras.delay);
+                return;
+            }
+
+            // 左右滑屏
+            var switch_left_default = function() {
+                this_obj.Timeout_id = setTimeout(function() {
+                    if (this_obj.paras.autoPlay) {
+                        this_obj.scrollToLeft();
+                    }
+                }, this_obj.paras.delay);
+            };
+            switch (direct.toLowerCase()) {
+                case "left":
+                    switch_left_default();
+                    break;
+                default:
+                    switch_left_default();
+                    break;
+                case "right":
+                    this_obj.Timeout_id = setTimeout(function() {
+                        if (this_obj.paras.autoPlay)
+                            this_obj.scrollToRight();
+                    }, this_obj.paras.delay);
+                    break;
+            }
+        },
+
+        // 渐进淡出 X张
+        fadeToNext: function(X) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = this_obj.paras.distance;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+            var li_obj = ul_obj.find(_paras.pic_li_selector);
+            var li_length = li_obj.length;
+            var li_obj_last = li_obj.last();
+
+            if (X >= li_length)
+                X = li_length - 1;
+
+            if (X === 1) {
+                li_obj = li_obj_last;
+            } else {
+                li_obj = ul_obj.find(_paras.pic_li_selector + ":gt(" + (li_length - X - 1) + ")");
+
+                var i = 0;
+                li_length = li_obj.length;
+
+                for (; i < li_length - 1; i++)
+                    $(li_obj[i]).css({
+                        display: "none"
+                    });
+            }
+
+            // console.log(li_obj.length);
+
+            // 切换
+            this_obj.setFadeTo.apply(this_obj, [li_obj, this_obj.paras.duration, function(_this_obj, _li_obj) {
+
+                _li_obj.prependTo(ul_obj).css({
+                    "opacity": "1",
+                    "display": "block"
+                });
+
+
+                // 切换圆点
+                _this_obj.pointer_now += X;
+                if (_this_obj.pointer_now >= _this_obj.pointer_count) {
+                    _this_obj.pointer_now -= _this_obj.pointer_count;
+                }
+                _this_obj.changePoint();
+
+                _this_obj.Rotating = false;
+
+                // 再次执行滚动（如autoPlay不为null）
+                if (_this_obj.paras.autoPlay)
+                    _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+
+            }]);
+        },
+
+        // 向左滚X屏和Y个圆点位
+        scrollToLeft: function(X, Y) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = _paras.distance;
+            if (!Y)
+                Y = 1;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+
+            // 计算滚动后的left值
+            var ul_left_px_new = -X * this_obj.li_width_px;
+
+            // 执行滚动
+            this_obj.setTranslate.apply(this_obj, [ul_obj, _paras.duration, ul_left_px_new, function(_this_obj, ul_obj) {
+
+                var li_obj = ul_obj.find(_paras.pic_li_selector);
+                var i = 0;
+                for (; i < X; i++) {
+                    $(li_obj[i]).appendTo(ul_obj);
+                }
+                _this_obj.setTranslate.apply(_this_obj, [ul_obj, 0, 0]);
+
+                // 切换pointer_now和pointer_now
+                _this_obj.pointer_now += Y;
+                if (_this_obj.pointer_now >= _this_obj.pointer_count) {
+                    _this_obj.pointer_now = 0;
+                }
+
+                // 切换圆点
+                _this_obj.changePoint();
+
+                _this_obj.Rotating = false;
+
+                // 再次执行滚动（如autoPlay不为null）
+                if (_this_obj.paras.autoPlay)
+                    _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+
+
+            }]);
+        },
+
+        // 向右滚X屏和Y个圆点位
+        scrollToRight: function(X, Y) {
+            var this_obj = this;
+            if (this_obj.Rotating)
+                return;
+            this_obj.Rotating = true;
+            var _paras = this_obj.paras;
+
+            if (!X)
+                X = _paras.distance;
+            if (!Y)
+                Y = 1;
+
+            var ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+
+            var li_obj = $(ul_obj.find(_paras.pic_li_selector));
+            var li_obj_len = li_obj.length;
+
+            var i = 0;
+            for (; i < X; i++)
+                $(li_obj[li_obj_len - (i + 1)]).prependTo(ul_obj);
+
+            this_obj.setTranslate.apply(this_obj, [ul_obj, 0, -X * this_obj.li_width_px]);
+
+            setTimeout(function() {
+                this_obj.setTranslate.apply(this_obj, [ul_obj, _paras.duration, 0, function(_this_obj) {
+
+                    // 切换pointer_now
+                    _this_obj.pointer_now -= Y;
+                    if (_this_obj.pointer_now < 0) {
+                        _this_obj.pointer_now = _this_obj.pointer_count - 1;
+                    }
+
+                    // 切换圆点
+                    _this_obj.changePoint();
+
+                    _this_obj.Rotating = false;
+
+                    // 再次执行滚动（如autoPlay不为null）
+                    if (_this_obj.paras.autoPlay)
+                        _this_obj.preRotating(_this_obj.paras.autoPlay.toLowerCase());
+                }]);
+            }, 0);
+        },
+
+        // 切换圆点高亮
+        changePoint: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var obj = $(_paras.point_ul_selector + " li");
+            obj.siblings("." + _paras.point_li_selected_className).removeClass(_paras.point_li_selected_className);
+            $(obj[this_obj.pointer_now]).addClass(_paras.point_li_selected_className);
+        },
+
+        // 监听圆点
+        PointListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var obj = $(_paras.point_ul_selector + " li");
+            $(obj[0]).addClass(_paras.point_li_selected_className);
+            obj.on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                var n = $(this).index();
+                if (n == this_obj.pointer_now)
+                    return;
+
+                // clearTimeout();
+
+                if (_paras.effect == "move") {
+                    if (n < this_obj.pointer_now)
+                        this_obj.scrollToRight((this_obj.pointer_now - n) * _paras.distance, this_obj.pointer_now - n);
+                    if (n > this_obj.pointer_now)
+                        this_obj.scrollToLeft((n - this_obj.pointer_now) * _paras.distance, n - this_obj.pointer_now);
+                } else if (_paras.effect == "fade") {
+                    var X = n - this_obj.pointer_now;
+                    if (X < 0)
+                        X += obj.length;
+                    this_obj.fadeToNext(X);
+                }
+            });
+        },
+
+        // 监听左箭头
+        arrowLeftListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            $(_paras.arrow_left_selector).on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                this_obj.scrollToRight();
+            });
+        },
+
+        // 监听右箭头
+        arrowRightListener: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            $(_paras.arrow_right_selector).on("touchstart mousedown", function(event) {
+                event.preventDefault();
+                this_obj.scrollToLeft();
+            });
+        },
+
+        // 暂停自动播放
+        Pause: function() {
+            this.paras.autoPlay = null;
+        },
+
+        // 重启自动播放
+        reStart: function(direction) {
+            if (!this.paras.autoPlay) {
+                this.paras.autoPlay = direction || "left";
+                this.preRotating(this.paras.autoPlay);
+            }
+        },
+
+        // 移动端效果监听
+        MobileEffectListen: function() {
+            var this_obj = this;
+            var _paras = this_obj.paras;
+            var pic_ul_obj = $(_paras.box_selector + " " + _paras.pic_ul_selector);
+            var touchstart_x;
+            var touchend_x;
+            var window_width_px = $(window).width();
+
+            // touchstart
+            pic_ul_obj.on("touchstart", function(event) {
+                touchstart_x = event.touches[0].clientX;
+                touchend_x = null;
+                this_obj.Pause();
+            });
+
+            // touchmove
+            pic_ul_obj.on("touchmove", function(event) {
+                touchend_x = event.touches[0].clientX;
+            });
+
+            // touchend
+            pic_ul_obj.on("touchend", function() {
+                if(!touchend_x)
+                    return;
+
+                var distance_vw = (touchend_x - touchstart_x) / window_width_px * 100;
+                var duration = 0;
+
+                // 验证横向位移是否超过阈值
+                if (distance_vw >= _paras.mobile_effect_touchmove_distance_vw || distance_vw <= -_paras.mobile_effect_touchmove_distance_vw) {
+
+                    duration = _paras.duration;
+
+                    if (distance_vw < 0)
+                        this_obj.scrollToLeft();
+                    else {
+                        this_obj.scrollToRight();
+                    }
+                }
+
+                if (this_obj.autoPlay)
+                    setTimeout(function() {
+                        this_obj.reStart(this_obj.autoPlay);
+                    }, duration);
+
+            });
+        },
+
+        // 设置translate-x样式
+        // obj: 设置对象
+        // duration: 动画时间，毫秒数
+        // x: translate-x值
+        // callback: 完成回调
+        setTranslate: function(obj, duration, x, callback) {
+            var this_obj = this;
+
+            // 判断
+            var transition = obj[0].style.transition;
+            if (transition === undefined || transition === null) {
+
+                obj.animate({
+                    left: x + "px"
+                }, duration, function() {
+                    if (callback)
+                        callback(this_obj, obj);
+                });
+
+            } else {
+
+                obj.css({
+                    "transition": "all " + duration * 0.001 + "s linear",
+                    "transform": "translateX(" + x + "px)",
+                    "-webkit-transform": "translateX(" + x + "px)",
+                    "-moz-transform": "translateX(" + x + "px)",
+                    "-o-transform": "translateX(" + x + "px)",
+                    "-ms-transform": "translateX(" + x + "px)"
+                });
+
+                if (callback) {
+                    setTimeout(function() {
+                        callback(this_obj, obj);
+                    }, duration);
+                }
+            }
+        },
+
+        // 设置透明度样式
+        // obj: 设置对象
+        // duration: 动画时间，毫秒数
+        // callback: 完成回调
+        setFadeTo: function(obj, duration, callback) {
+
+            var this_obj = this;
+
+            // 判断
+            var transition = obj[0].style.transition;
+
+            if (transition === undefined || transition === null) {
+                obj.last().fadeOut(duration, function() {
+                    if (callback) {
+                        callback(this_obj, obj);
+                    }
+                });
+            } else {
+
+                // obj.one("transitionend", function() {
+                //     // obj.css("transition", "none");
+                //     console.log("here");
+                //     if (callback)
+                //         callback(this_obj, obj);
+                // });
+
+
+                obj.css({
+                    "transition": "opacity " + duration * 0.001 + "s linear",
+                    "opacity": 0
+                });
+
+                if (callback) {
+                    setTimeout(function() {
+
+                        if (callback)
+                            callback(this_obj, obj);
+                    }, duration);
+                }
+            }
+        }
+    };
+}
+
+if (typeof define === "function" && define.amd) {
+    define('lib/RotatingBanner',[],function() {
+        return RotatingBanner;
+    });
+};
+/*
+    表情面板相关js
+    执行$obj.init(opt)启动
+    @opt: {
+        device: "mobile" | "pc",
+        box_selector: 外盒选择器，默认值：.emotion_box,
+        pic_ul_selector: 图片li的ul盒选择器，此盒必须存在于box_selector中，且值中不用包含box_selector。默认值：.emotion_panel,
+        point_ul_selector: 圆点li的ul盒选择器，空字符串为无圆点。此盒不必存在于box_selector中。默认值：.emotion_box .point_li
+    }
+
+    that = {
+        opt: 参数
+    }
+*/
+
+define('modules/emotion',["lib/RotatingBanner"], function($rb) {
+    var emotion = {
+        init: function(opt) {
+            var that = this;
+
+            // 处理opt
+            that.opt_deal.apply(that, [opt]);
+
+            // 设置pic_ul_selector的宽度
+            that.set_picUlSelector_width.apply(that);
+
+            // 监听左右划屏轮播
+            that.Rotating_Listener.apply(that);
+        },
+
+        // 处理opt
+        opt_deal: function(opt) {
+
+            var that = this;
+
+            var opt_default = {
+                mobile_effect: true,
+                box_selector: ".emotion_box",
+                pic_ul_selector: ".emotion_panel",
+                point_ul_selector: ".emotion_box .point_ul",
+                pic_li_selector: "li.screen_li",
+                point_autoCreate: true,
+                duration: 200,
+                resize_li: false,
+                mobile_effect_touchmove_distance_vw: 10
+            };
+
+            that.opt = $.extend(opt_default, opt);
+        },
+
+        // 设置pic_ul_selector的宽度
+        set_picUlSelector_width: function() {
+            var that = this;
+
+            var panel = $(that.opt.pic_ul_selector),
+                ul = panel.find("ul"),
+                window_width_px = $(window).width();
+
+            panel.css({
+                width: ul.length * window_width_px + "px"
+            });
+        },
+
+        // 监听左右划屏轮播
+        Rotating_Listener: function() {
+
+            var that = this;
+
+            var RotatingBanner_1 = new $rb();
+            RotatingBanner_1.init(that.opt);
+        },
+
+        // 更换表情，返回msg
+        emotion_filter: function(msg) {
+
+            // 基础正则
+            var regExp_base_str = "(\\[.+?\\])";
+
+            // 扩展正则，出现在基础正则前面
+            var regExp_ext_str = "";
+
+            // 正则条件对象
+            var regExp = new RegExp("()" + regExp_base_str);
+
+            var result,
+                name_index;
+            var replace_callback = function(m, $1) {
+                return (function() {
+                    return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+                })();
+            };
+            while (true) {
+                result = regExp.exec(msg);
+
+
+                // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+                if (!result)
+                    break;
+
+
+                name_index = comm_emotion.emotion_name_list.indexOf(result[2]);
+
+                // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+                if (name_index == -1) {
+                    regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
+                    regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+                } else {
+                    msg = msg.replace(regExp, replace_callback);
+                }
+            }
+
+            return msg;
+        }
+    };
+
+    return emotion;
+});
 /*
     chat管理平台页js
     高京
@@ -1716,7 +2390,13 @@ if (typeof define === "function" && define.amd) {
     }
 */
 
-define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
+define('app/chat_mp_index',[
+    "lib/LayerShow",
+    "modules/emotion"
+], function(
+    $LayerShow,
+    $emotion
+) {
     var chat_mp_index = {
 
         RECORD_COUNT: 10,
@@ -1746,7 +2426,14 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
 
                 var button_this = $(this);
 
+                // 清除当前高亮
+                button_this.siblings(".now").removeClass("now");
+                $(".button_inline span.weui-btn.now").removeClass("now");
+
                 if (button_this.hasClass("show_record")) {
+
+                    // 高亮
+                    button_this.addClass("now");
 
                     // 清空原先记录
                     $(".wrapper_right li:not(.template,.more_record)").remove();
@@ -1758,6 +2445,9 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                     var scroll_direction = "bottom";
                     that.getRecords_ajax.apply(that, [cid, sid, start_count, scroll_direction]);
                 } else if (button_this.hasClass("show_risk_record")) {
+
+                    // 高亮
+                    button_this.addClass("now");
 
                     // 清空原先记录
                     $(".wrapper_right li:not(.template,.more_record)").remove();
@@ -1897,6 +2587,11 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                     break;
             }
 
+            // 如果非系统消息，做内容的表情过滤
+            if (r.sender.toLowerCase() != "o") {
+                r.content = $emotion.emotion_filter(r.content);
+            }
+
             // 装载内容
             li.find("p").html("<span class=\"arrow\"></span>" + r.content);
 
@@ -1978,6 +2673,10 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
             var that = this;
 
             $(".button_inline .weui-btn").unbind().on("click", function() {
+
+                // 清除顶部按钮高亮
+                $(".buttons li.now").removeClass("now");
+
                 var li_obj = $(this).parents(".button_inline");
                 var index = li_obj.parent().find(".button_inline").index(li_obj) + 1;
                 switch (index) {
@@ -1991,6 +2690,13 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
                         that.button_inline_click_3.apply(that, [li_obj.parents(".line_li")]);
                         break;
                     case 4:
+
+                        // 清除原先高亮
+                        $(".button_inline .weui-btn.now").removeClass("now");
+
+                        // 高亮当前点击按钮
+                        $(this).addClass("now");
+
                         that.button_inline_click_4.apply(that, [li_obj.parents(".line_li").attr("_id")]);
                         break;
                     default:
@@ -2480,7 +3186,7 @@ define('app/chat_mp_index',["lib/LayerShow"], function($LayerShow) {
 this.secure=null!=r.secure?r.secure:e.location&&"https:"===location.protocol,r.hostname&&!r.port&&(r.port=this.secure?"443":"80"),this.agent=r.agent||!1,this.hostname=r.hostname||(e.location?location.hostname:"localhost"),this.port=r.port||(e.location&&location.port?location.port:this.secure?443:80),this.query=r.query||{},"string"==typeof this.query&&(this.query=f.decode(this.query)),this.upgrade=!1!==r.upgrade,this.path=(r.path||"/engine.io").replace(/\/$/,"")+"/",this.forceJSONP=!!r.forceJSONP,this.jsonp=!1!==r.jsonp,this.forceBase64=!!r.forceBase64,this.enablesXDR=!!r.enablesXDR,this.timestampParam=r.timestampParam||"t",this.timestampRequests=r.timestampRequests,this.transports=r.transports||["polling","websocket"],this.readyState="",this.writeBuffer=[],this.prevBufferLen=0,this.policyPort=r.policyPort||843,this.rememberUpgrade=r.rememberUpgrade||!1,this.binaryType=null,this.onlyBinaryUpgrades=r.onlyBinaryUpgrades,this.perMessageDeflate=!1!==r.perMessageDeflate&&(r.perMessageDeflate||{}),!0===this.perMessageDeflate&&(this.perMessageDeflate={}),this.perMessageDeflate&&null==this.perMessageDeflate.threshold&&(this.perMessageDeflate.threshold=1024),this.pfx=r.pfx||null,this.key=r.key||null,this.passphrase=r.passphrase||null,this.cert=r.cert||null,this.ca=r.ca||null,this.ciphers=r.ciphers||null,this.rejectUnauthorized=void 0===r.rejectUnauthorized?null:r.rejectUnauthorized,this.forceNode=!!r.forceNode;var o="object"==typeof e&&e;o.global===o&&(r.extraHeaders&&Object.keys(r.extraHeaders).length>0&&(this.extraHeaders=r.extraHeaders),r.localAddress&&(this.localAddress=r.localAddress)),this.id=null,this.upgrades=null,this.pingInterval=null,this.pingTimeout=null,this.pingIntervalTimer=null,this.pingTimeoutTimer=null,this.open()}function o(t){var e={};for(var r in t)t.hasOwnProperty(r)&&(e[r]=t[r]);return e}var i=r(21),s=r(35),a=r(3)("engine.io-client:socket"),c=r(42),u=r(27),h=r(2),p=r(43),f=r(36);t.exports=n,n.priorWebsocketSuccess=!1,s(n.prototype),n.protocol=u.protocol,n.Socket=n,n.Transport=r(26),n.transports=r(21),n.parser=r(27),n.prototype.createTransport=function(t){a('creating transport "%s"',t);var e=o(this.query);e.EIO=u.protocol,e.transport=t,this.id&&(e.sid=this.id);var r=new i[t]({agent:this.agent,hostname:this.hostname,port:this.port,secure:this.secure,path:this.path,query:e,forceJSONP:this.forceJSONP,jsonp:this.jsonp,forceBase64:this.forceBase64,enablesXDR:this.enablesXDR,timestampRequests:this.timestampRequests,timestampParam:this.timestampParam,policyPort:this.policyPort,socket:this,pfx:this.pfx,key:this.key,passphrase:this.passphrase,cert:this.cert,ca:this.ca,ciphers:this.ciphers,rejectUnauthorized:this.rejectUnauthorized,perMessageDeflate:this.perMessageDeflate,extraHeaders:this.extraHeaders,forceNode:this.forceNode,localAddress:this.localAddress});return r},n.prototype.open=function(){var t;if(this.rememberUpgrade&&n.priorWebsocketSuccess&&this.transports.indexOf("websocket")!==-1)t="websocket";else{if(0===this.transports.length){var e=this;return void setTimeout(function(){e.emit("error","No transports available")},0)}t=this.transports[0]}this.readyState="opening";try{t=this.createTransport(t)}catch(t){return this.transports.shift(),void this.open()}t.open(),this.setTransport(t)},n.prototype.setTransport=function(t){a("setting transport %s",t.name);var e=this;this.transport&&(a("clearing existing transport %s",this.transport.name),this.transport.removeAllListeners()),this.transport=t,t.on("drain",function(){e.onDrain()}).on("packet",function(t){e.onPacket(t)}).on("error",function(t){e.onError(t)}).on("close",function(){e.onClose("transport close")})},n.prototype.probe=function(t){function e(){if(f.onlyBinaryUpgrades){var e=!this.supportsBinary&&f.transport.supportsBinary;p=p||e}p||(a('probe transport "%s" opened',t),h.send([{type:"ping",data:"probe"}]),h.once("packet",function(e){if(!p)if("pong"===e.type&&"probe"===e.data){if(a('probe transport "%s" pong',t),f.upgrading=!0,f.emit("upgrading",h),!h)return;n.priorWebsocketSuccess="websocket"===h.name,a('pausing current transport "%s"',f.transport.name),f.transport.pause(function(){p||"closed"!==f.readyState&&(a("changing transport and sending upgrade packet"),u(),f.setTransport(h),h.send([{type:"upgrade"}]),f.emit("upgrade",h),h=null,f.upgrading=!1,f.flush())})}else{a('probe transport "%s" failed',t);var r=new Error("probe error");r.transport=h.name,f.emit("upgradeError",r)}}))}function r(){p||(p=!0,u(),h.close(),h=null)}function o(e){var n=new Error("probe error: "+e);n.transport=h.name,r(),a('probe transport "%s" failed because of error: %s',t,e),f.emit("upgradeError",n)}function i(){o("transport closed")}function s(){o("socket closed")}function c(t){h&&t.name!==h.name&&(a('"%s" works - aborting "%s"',t.name,h.name),r())}function u(){h.removeListener("open",e),h.removeListener("error",o),h.removeListener("close",i),f.removeListener("close",s),f.removeListener("upgrading",c)}a('probing transport "%s"',t);var h=this.createTransport(t,{probe:1}),p=!1,f=this;n.priorWebsocketSuccess=!1,h.once("open",e),h.once("error",o),h.once("close",i),this.once("close",s),this.once("upgrading",c),h.open()},n.prototype.onOpen=function(){if(a("socket open"),this.readyState="open",n.priorWebsocketSuccess="websocket"===this.transport.name,this.emit("open"),this.flush(),"open"===this.readyState&&this.upgrade&&this.transport.pause){a("starting upgrade probes");for(var t=0,e=this.upgrades.length;t<e;t++)this.probe(this.upgrades[t])}},n.prototype.onPacket=function(t){if("opening"===this.readyState||"open"===this.readyState||"closing"===this.readyState)switch(a('socket receive: type "%s", data "%s"',t.type,t.data),this.emit("packet",t),this.emit("heartbeat"),t.type){case"open":this.onHandshake(p(t.data));break;case"pong":this.setPing(),this.emit("pong");break;case"error":var e=new Error("server error");e.code=t.data,this.onError(e);break;case"message":this.emit("data",t.data),this.emit("message",t.data)}else a('packet received with socket readyState "%s"',this.readyState)},n.prototype.onHandshake=function(t){this.emit("handshake",t),this.id=t.sid,this.transport.query.sid=t.sid,this.upgrades=this.filterUpgrades(t.upgrades),this.pingInterval=t.pingInterval,this.pingTimeout=t.pingTimeout,this.onOpen(),"closed"!==this.readyState&&(this.setPing(),this.removeListener("heartbeat",this.onHeartbeat),this.on("heartbeat",this.onHeartbeat))},n.prototype.onHeartbeat=function(t){clearTimeout(this.pingTimeoutTimer);var e=this;e.pingTimeoutTimer=setTimeout(function(){"closed"!==e.readyState&&e.onClose("ping timeout")},t||e.pingInterval+e.pingTimeout)},n.prototype.setPing=function(){var t=this;clearTimeout(t.pingIntervalTimer),t.pingIntervalTimer=setTimeout(function(){a("writing ping packet - expecting pong within %sms",t.pingTimeout),t.ping(),t.onHeartbeat(t.pingTimeout)},t.pingInterval)},n.prototype.ping=function(){var t=this;this.sendPacket("ping",function(){t.emit("ping")})},n.prototype.onDrain=function(){this.writeBuffer.splice(0,this.prevBufferLen),this.prevBufferLen=0,0===this.writeBuffer.length?this.emit("drain"):this.flush()},n.prototype.flush=function(){"closed"!==this.readyState&&this.transport.writable&&!this.upgrading&&this.writeBuffer.length&&(a("flushing %d packets in socket",this.writeBuffer.length),this.transport.send(this.writeBuffer),this.prevBufferLen=this.writeBuffer.length,this.emit("flush"))},n.prototype.write=n.prototype.send=function(t,e,r){return this.sendPacket("message",t,e,r),this},n.prototype.sendPacket=function(t,e,r,n){if("function"==typeof e&&(n=e,e=void 0),"function"==typeof r&&(n=r,r=null),"closing"!==this.readyState&&"closed"!==this.readyState){r=r||{},r.compress=!1!==r.compress;var o={type:t,data:e,options:r};this.emit("packetCreate",o),this.writeBuffer.push(o),n&&this.once("flush",n),this.flush()}},n.prototype.close=function(){function t(){n.onClose("forced close"),a("socket closing - telling transport to close"),n.transport.close()}function e(){n.removeListener("upgrade",e),n.removeListener("upgradeError",e),t()}function r(){n.once("upgrade",e),n.once("upgradeError",e)}if("opening"===this.readyState||"open"===this.readyState){this.readyState="closing";var n=this;this.writeBuffer.length?this.once("drain",function(){this.upgrading?r():t()}):this.upgrading?r():t()}return this},n.prototype.onError=function(t){a("socket error %j",t),n.priorWebsocketSuccess=!1,this.emit("error",t),this.onClose("transport error",t)},n.prototype.onClose=function(t,e){if("opening"===this.readyState||"open"===this.readyState||"closing"===this.readyState){a('socket close with reason: "%s"',t);var r=this;clearTimeout(this.pingIntervalTimer),clearTimeout(this.pingTimeoutTimer),this.transport.removeAllListeners("close"),this.transport.close(),this.transport.removeAllListeners(),this.readyState="closed",this.id=null,this.emit("close",t,e),r.writeBuffer=[],r.prevBufferLen=0}},n.prototype.filterUpgrades=function(t){for(var e=[],r=0,n=t.length;r<n;r++)~c(this.transports,t[r])&&e.push(t[r]);return e}}).call(e,function(){return this}())},function(t,e,r){(function(t){function n(e){var r,n=!1,a=!1,c=!1!==e.jsonp;if(t.location){var u="https:"===location.protocol,h=location.port;h||(h=u?443:80),n=e.hostname!==location.hostname||h!==e.port,a=e.secure!==u}if(e.xdomain=n,e.xscheme=a,r=new o(e),"open"in r&&!e.forceJSONP)return new i(e);if(!c)throw new Error("JSONP disabled");return new s(e)}var o=r(22),i=r(24),s=r(39),a=r(40);e.polling=n,e.websocket=a}).call(e,function(){return this}())},function(t,e,r){(function(e){var n=r(23);t.exports=function(t){var r=t.xdomain,o=t.xscheme,i=t.enablesXDR;try{if("undefined"!=typeof XMLHttpRequest&&(!r||n))return new XMLHttpRequest}catch(t){}try{if("undefined"!=typeof XDomainRequest&&!o&&i)return new XDomainRequest}catch(t){}if(!r)try{return new(e[["Active"].concat("Object").join("X")])("Microsoft.XMLHTTP")}catch(t){}}}).call(e,function(){return this}())},function(t,e){try{t.exports="undefined"!=typeof XMLHttpRequest&&"withCredentials"in new XMLHttpRequest}catch(e){t.exports=!1}},function(t,e,r){(function(e){function n(){}function o(t){if(c.call(this,t),this.requestTimeout=t.requestTimeout,e.location){var r="https:"===location.protocol,n=location.port;n||(n=r?443:80),this.xd=t.hostname!==e.location.hostname||n!==t.port,this.xs=t.secure!==r}else this.extraHeaders=t.extraHeaders}function i(t){this.method=t.method||"GET",this.uri=t.uri,this.xd=!!t.xd,this.xs=!!t.xs,this.async=!1!==t.async,this.data=void 0!==t.data?t.data:null,this.agent=t.agent,this.isBinary=t.isBinary,this.supportsBinary=t.supportsBinary,this.enablesXDR=t.enablesXDR,this.requestTimeout=t.requestTimeout,this.pfx=t.pfx,this.key=t.key,this.passphrase=t.passphrase,this.cert=t.cert,this.ca=t.ca,this.ciphers=t.ciphers,this.rejectUnauthorized=t.rejectUnauthorized,this.extraHeaders=t.extraHeaders,this.create()}function s(){for(var t in i.requests)i.requests.hasOwnProperty(t)&&i.requests[t].abort()}var a=r(22),c=r(25),u=r(35),h=r(37),p=r(3)("engine.io-client:polling-xhr");t.exports=o,t.exports.Request=i,h(o,c),o.prototype.supportsBinary=!0,o.prototype.request=function(t){return t=t||{},t.uri=this.uri(),t.xd=this.xd,t.xs=this.xs,t.agent=this.agent||!1,t.supportsBinary=this.supportsBinary,t.enablesXDR=this.enablesXDR,t.pfx=this.pfx,t.key=this.key,t.passphrase=this.passphrase,t.cert=this.cert,t.ca=this.ca,t.ciphers=this.ciphers,t.rejectUnauthorized=this.rejectUnauthorized,t.requestTimeout=this.requestTimeout,t.extraHeaders=this.extraHeaders,new i(t)},o.prototype.doWrite=function(t,e){var r="string"!=typeof t&&void 0!==t,n=this.request({method:"POST",data:t,isBinary:r}),o=this;n.on("success",e),n.on("error",function(t){o.onError("xhr post error",t)}),this.sendXhr=n},o.prototype.doPoll=function(){p("xhr poll");var t=this.request(),e=this;t.on("data",function(t){e.onData(t)}),t.on("error",function(t){e.onError("xhr poll error",t)}),this.pollXhr=t},u(i.prototype),i.prototype.create=function(){var t={agent:this.agent,xdomain:this.xd,xscheme:this.xs,enablesXDR:this.enablesXDR};t.pfx=this.pfx,t.key=this.key,t.passphrase=this.passphrase,t.cert=this.cert,t.ca=this.ca,t.ciphers=this.ciphers,t.rejectUnauthorized=this.rejectUnauthorized;var r=this.xhr=new a(t),n=this;try{p("xhr open %s: %s",this.method,this.uri),r.open(this.method,this.uri,this.async);try{if(this.extraHeaders){r.setDisableHeaderCheck(!0);for(var o in this.extraHeaders)this.extraHeaders.hasOwnProperty(o)&&r.setRequestHeader(o,this.extraHeaders[o])}}catch(t){}if(this.supportsBinary&&(r.responseType="arraybuffer"),"POST"===this.method)try{this.isBinary?r.setRequestHeader("Content-type","application/octet-stream"):r.setRequestHeader("Content-type","text/plain;charset=UTF-8")}catch(t){}try{r.setRequestHeader("Accept","*/*")}catch(t){}"withCredentials"in r&&(r.withCredentials=!0),this.requestTimeout&&(r.timeout=this.requestTimeout),this.hasXDR()?(r.onload=function(){n.onLoad()},r.onerror=function(){n.onError(r.responseText)}):r.onreadystatechange=function(){4===r.readyState&&(200===r.status||1223===r.status?n.onLoad():setTimeout(function(){n.onError(r.status)},0))},p("xhr data %s",this.data),r.send(this.data)}catch(t){return void setTimeout(function(){n.onError(t)},0)}e.document&&(this.index=i.requestsCount++,i.requests[this.index]=this)},i.prototype.onSuccess=function(){this.emit("success"),this.cleanup()},i.prototype.onData=function(t){this.emit("data",t),this.onSuccess()},i.prototype.onError=function(t){this.emit("error",t),this.cleanup(!0)},i.prototype.cleanup=function(t){if("undefined"!=typeof this.xhr&&null!==this.xhr){if(this.hasXDR()?this.xhr.onload=this.xhr.onerror=n:this.xhr.onreadystatechange=n,t)try{this.xhr.abort()}catch(t){}e.document&&delete i.requests[this.index],this.xhr=null}},i.prototype.onLoad=function(){var t;try{var e;try{e=this.xhr.getResponseHeader("Content-Type").split(";")[0]}catch(t){}if("application/octet-stream"===e)t=this.xhr.response||this.xhr.responseText;else if(this.supportsBinary)try{t=String.fromCharCode.apply(null,new Uint8Array(this.xhr.response))}catch(e){for(var r=new Uint8Array(this.xhr.response),n=[],o=0,i=r.length;o<i;o++)n.push(r[o]);t=String.fromCharCode.apply(null,n)}else t=this.xhr.responseText}catch(t){this.onError(t)}null!=t&&this.onData(t)},i.prototype.hasXDR=function(){return"undefined"!=typeof e.XDomainRequest&&!this.xs&&this.enablesXDR},i.prototype.abort=function(){this.cleanup()},i.requestsCount=0,i.requests={},e.document&&(e.attachEvent?e.attachEvent("onunload",s):e.addEventListener&&e.addEventListener("beforeunload",s,!1))}).call(e,function(){return this}())},function(t,e,r){function n(t){var e=t&&t.forceBase64;h&&!e||(this.supportsBinary=!1),o.call(this,t)}var o=r(26),i=r(36),s=r(27),a=r(37),c=r(38),u=r(3)("engine.io-client:polling");t.exports=n;var h=function(){var t=r(22),e=new t({xdomain:!1});return null!=e.responseType}();a(n,o),n.prototype.name="polling",n.prototype.doOpen=function(){this.poll()},n.prototype.pause=function(t){function e(){u("paused"),r.readyState="paused",t()}var r=this;if(this.readyState="pausing",this.polling||!this.writable){var n=0;this.polling&&(u("we are currently polling - waiting to pause"),n++,this.once("pollComplete",function(){u("pre-pause polling complete"),--n||e()})),this.writable||(u("we are currently writing - waiting to pause"),n++,this.once("drain",function(){u("pre-pause writing complete"),--n||e()}))}else e()},n.prototype.poll=function(){u("polling"),this.polling=!0,this.doPoll(),this.emit("poll")},n.prototype.onData=function(t){var e=this;u("polling got data %s",t);var r=function(t,r,n){return"opening"===e.readyState&&e.onOpen(),"close"===t.type?(e.onClose(),!1):void e.onPacket(t)};s.decodePayload(t,this.socket.binaryType,r),"closed"!==this.readyState&&(this.polling=!1,this.emit("pollComplete"),"open"===this.readyState?this.poll():u('ignoring poll - transport state "%s"',this.readyState))},n.prototype.doClose=function(){function t(){u("writing close packet"),e.write([{type:"close"}])}var e=this;"open"===this.readyState?(u("transport open - closing"),t()):(u("transport not open - deferring close"),this.once("open",t))},n.prototype.write=function(t){var e=this;this.writable=!1;var r=function(){e.writable=!0,e.emit("drain")};s.encodePayload(t,this.supportsBinary,function(t){e.doWrite(t,r)})},n.prototype.uri=function(){var t=this.query||{},e=this.secure?"https":"http",r="";!1!==this.timestampRequests&&(t[this.timestampParam]=c()),this.supportsBinary||t.sid||(t.b64=1),t=i.encode(t),this.port&&("https"===e&&443!==Number(this.port)||"http"===e&&80!==Number(this.port))&&(r=":"+this.port),t.length&&(t="?"+t);var n=this.hostname.indexOf(":")!==-1;return e+"://"+(n?"["+this.hostname+"]":this.hostname)+r+this.path+t}},function(t,e,r){function n(t){this.path=t.path,this.hostname=t.hostname,this.port=t.port,this.secure=t.secure,this.query=t.query,this.timestampParam=t.timestampParam,this.timestampRequests=t.timestampRequests,this.readyState="",this.agent=t.agent||!1,this.socket=t.socket,this.enablesXDR=t.enablesXDR,this.pfx=t.pfx,this.key=t.key,this.passphrase=t.passphrase,this.cert=t.cert,this.ca=t.ca,this.ciphers=t.ciphers,this.rejectUnauthorized=t.rejectUnauthorized,this.forceNode=t.forceNode,this.extraHeaders=t.extraHeaders,this.localAddress=t.localAddress}var o=r(27),i=r(35);t.exports=n,i(n.prototype),n.prototype.onError=function(t,e){var r=new Error(t);return r.type="TransportError",r.description=e,this.emit("error",r),this},n.prototype.open=function(){return"closed"!==this.readyState&&""!==this.readyState||(this.readyState="opening",this.doOpen()),this},n.prototype.close=function(){return"opening"!==this.readyState&&"open"!==this.readyState||(this.doClose(),this.onClose()),this},n.prototype.send=function(t){if("open"!==this.readyState)throw new Error("Transport not open");this.write(t)},n.prototype.onOpen=function(){this.readyState="open",this.writable=!0,this.emit("open")},n.prototype.onData=function(t){var e=o.decodePacket(t,this.socket.binaryType);this.onPacket(e)},n.prototype.onPacket=function(t){this.emit("packet",t)},n.prototype.onClose=function(){this.readyState="closed",this.emit("close")}},function(t,e,r){(function(t){function n(t,r){var n="b"+e.packets[t.type]+t.data.data;return r(n)}function o(t,r,n){if(!r)return e.encodeBase64Packet(t,n);var o=t.data,i=new Uint8Array(o),s=new Uint8Array(1+o.byteLength);s[0]=v[t.type];for(var a=0;a<i.length;a++)s[a+1]=i[a];return n(s.buffer)}function i(t,r,n){if(!r)return e.encodeBase64Packet(t,n);var o=new FileReader;return o.onload=function(){t.data=o.result,e.encodePacket(t,r,!0,n)},o.readAsArrayBuffer(t.data)}function s(t,r,n){if(!r)return e.encodeBase64Packet(t,n);if(m)return i(t,r,n);var o=new Uint8Array(1);o[0]=v[t.type];var s=new k([o.buffer,t.data]);return n(s)}function a(t){try{t=d.decode(t)}catch(t){return!1}return t}function c(t,e,r){for(var n=new Array(t.length),o=l(t.length,r),i=function(t,r,o){e(r,function(e,r){n[t]=r,o(e,n)})},s=0;s<t.length;s++)i(s,t[s],o)}var u,h=r(28),p=r(29),f=r(30),l=r(31),d=r(32);t&&t.ArrayBuffer&&(u=r(33));var y="undefined"!=typeof navigator&&/Android/i.test(navigator.userAgent),g="undefined"!=typeof navigator&&/PhantomJS/i.test(navigator.userAgent),m=y||g;e.protocol=3;var v=e.packets={open:0,close:1,ping:2,pong:3,message:4,upgrade:5,noop:6},b=h(v),w={type:"error",data:"parser error"},k=r(34);e.encodePacket=function(e,r,i,a){"function"==typeof r&&(a=r,r=!1),"function"==typeof i&&(a=i,i=null);var c=void 0===e.data?void 0:e.data.buffer||e.data;if(t.ArrayBuffer&&c instanceof ArrayBuffer)return o(e,r,a);if(k&&c instanceof t.Blob)return s(e,r,a);if(c&&c.base64)return n(e,a);var u=v[e.type];return void 0!==e.data&&(u+=i?d.encode(String(e.data)):String(e.data)),a(""+u)},e.encodeBase64Packet=function(r,n){var o="b"+e.packets[r.type];if(k&&r.data instanceof t.Blob){var i=new FileReader;return i.onload=function(){var t=i.result.split(",")[1];n(o+t)},i.readAsDataURL(r.data)}var s;try{s=String.fromCharCode.apply(null,new Uint8Array(r.data))}catch(t){for(var a=new Uint8Array(r.data),c=new Array(a.length),u=0;u<a.length;u++)c[u]=a[u];s=String.fromCharCode.apply(null,c)}return o+=t.btoa(s),n(o)},e.decodePacket=function(t,r,n){if(void 0===t)return w;if("string"==typeof t){if("b"==t.charAt(0))return e.decodeBase64Packet(t.substr(1),r);if(n&&(t=a(t),t===!1))return w;var o=t.charAt(0);return Number(o)==o&&b[o]?t.length>1?{type:b[o],data:t.substring(1)}:{type:b[o]}:w}var i=new Uint8Array(t),o=i[0],s=f(t,1);return k&&"blob"===r&&(s=new k([s])),{type:b[o],data:s}},e.decodeBase64Packet=function(t,e){var r=b[t.charAt(0)];if(!u)return{type:r,data:{base64:!0,data:t.substr(1)}};var n=u.decode(t.substr(1));return"blob"===e&&k&&(n=new k([n])),{type:r,data:n}},e.encodePayload=function(t,r,n){function o(t){return t.length+":"+t}function i(t,n){e.encodePacket(t,!!s&&r,!0,function(t){n(null,o(t))})}"function"==typeof r&&(n=r,r=null);var s=p(t);return r&&s?k&&!m?e.encodePayloadAsBlob(t,n):e.encodePayloadAsArrayBuffer(t,n):t.length?void c(t,i,function(t,e){return n(e.join(""))}):n("0:")},e.decodePayload=function(t,r,n){if("string"!=typeof t)return e.decodePayloadAsBinary(t,r,n);"function"==typeof r&&(n=r,r=null);var o;if(""==t)return n(w,0,1);for(var i,s,a="",c=0,u=t.length;c<u;c++){var h=t.charAt(c);if(":"!=h)a+=h;else{if(""==a||a!=(i=Number(a)))return n(w,0,1);if(s=t.substr(c+1,i),a!=s.length)return n(w,0,1);if(s.length){if(o=e.decodePacket(s,r,!0),w.type==o.type&&w.data==o.data)return n(w,0,1);var p=n(o,c+i,u);if(!1===p)return}c+=i,a=""}}return""!=a?n(w,0,1):void 0},e.encodePayloadAsArrayBuffer=function(t,r){function n(t,r){e.encodePacket(t,!0,!0,function(t){return r(null,t)})}return t.length?void c(t,n,function(t,e){var n=e.reduce(function(t,e){var r;return r="string"==typeof e?e.length:e.byteLength,t+r.toString().length+r+2},0),o=new Uint8Array(n),i=0;return e.forEach(function(t){var e="string"==typeof t,r=t;if(e){for(var n=new Uint8Array(t.length),s=0;s<t.length;s++)n[s]=t.charCodeAt(s);r=n.buffer}e?o[i++]=0:o[i++]=1;for(var a=r.byteLength.toString(),s=0;s<a.length;s++)o[i++]=parseInt(a[s]);o[i++]=255;for(var n=new Uint8Array(r),s=0;s<n.length;s++)o[i++]=n[s]}),r(o.buffer)}):r(new ArrayBuffer(0))},e.encodePayloadAsBlob=function(t,r){function n(t,r){e.encodePacket(t,!0,!0,function(t){var e=new Uint8Array(1);if(e[0]=1,"string"==typeof t){for(var n=new Uint8Array(t.length),o=0;o<t.length;o++)n[o]=t.charCodeAt(o);t=n.buffer,e[0]=0}for(var i=t instanceof ArrayBuffer?t.byteLength:t.size,s=i.toString(),a=new Uint8Array(s.length+1),o=0;o<s.length;o++)a[o]=parseInt(s[o]);if(a[s.length]=255,k){var c=new k([e.buffer,a.buffer,t]);r(null,c)}})}c(t,n,function(t,e){return r(new k(e))})},e.decodePayloadAsBinary=function(t,r,n){"function"==typeof r&&(n=r,r=null);for(var o=t,i=[],s=!1;o.byteLength>0;){for(var a=new Uint8Array(o),c=0===a[0],u="",h=1;255!=a[h];h++){if(u.length>310){s=!0;break}u+=a[h]}if(s)return n(w,0,1);o=f(o,2+u.length),u=parseInt(u);var p=f(o,0,u);if(c)try{p=String.fromCharCode.apply(null,new Uint8Array(p))}catch(t){var l=new Uint8Array(p);p="";for(var h=0;h<l.length;h++)p+=String.fromCharCode(l[h])}i.push(p),o=f(o,u)}var d=i.length;i.forEach(function(t,o){n(e.decodePacket(t,r,!0),o,d)})}}).call(e,function(){return this}())},function(t,e){t.exports=Object.keys||function(t){var e=[],r=Object.prototype.hasOwnProperty;for(var n in t)r.call(t,n)&&e.push(n);return e}},function(t,e,r){(function(e){function n(t){function r(t){if(!t)return!1;if(e.Buffer&&e.Buffer.isBuffer&&e.Buffer.isBuffer(t)||e.ArrayBuffer&&t instanceof ArrayBuffer||e.Blob&&t instanceof Blob||e.File&&t instanceof File)return!0;if(o(t)){for(var n=0;n<t.length;n++)if(r(t[n]))return!0}else if(t&&"object"==typeof t){t.toJSON&&"function"==typeof t.toJSON&&(t=t.toJSON());for(var i in t)if(Object.prototype.hasOwnProperty.call(t,i)&&r(t[i]))return!0}return!1}return r(t)}var o=r(15);t.exports=n}).call(e,function(){return this}())},function(t,e){t.exports=function(t,e,r){var n=t.byteLength;if(e=e||0,r=r||n,t.slice)return t.slice(e,r);if(e<0&&(e+=n),r<0&&(r+=n),r>n&&(r=n),e>=n||e>=r||0===n)return new ArrayBuffer(0);for(var o=new Uint8Array(t),i=new Uint8Array(r-e),s=e,a=0;s<r;s++,a++)i[a]=o[s];return i.buffer}},function(t,e){function r(t,e,r){function o(t,n){if(o.count<=0)throw new Error("after called too many times");--o.count,t?(i=!0,e(t),e=r):0!==o.count||i||e(null,n)}var i=!1;return r=r||n,o.count=t,0===t?e():o}function n(){}t.exports=r},function(t,e,r){var n;(function(t,o){!function(i){function s(t){for(var e,r,n=[],o=0,i=t.length;o<i;)e=t.charCodeAt(o++),e>=55296&&e<=56319&&o<i?(r=t.charCodeAt(o++),56320==(64512&r)?n.push(((1023&e)<<10)+(1023&r)+65536):(n.push(e),o--)):n.push(e);return n}function a(t){for(var e,r=t.length,n=-1,o="";++n<r;)e=t[n],e>65535&&(e-=65536,o+=b(e>>>10&1023|55296),e=56320|1023&e),o+=b(e);return o}function c(t,e){return b(t>>e&63|128)}function u(t){if(0==(4294967168&t))return b(t);var e="";return 0==(4294965248&t)?e=b(t>>6&31|192):0==(4294901760&t)?(e=b(t>>12&15|224),e+=c(t,6)):0==(4292870144&t)&&(e=b(t>>18&7|240),e+=c(t,12),e+=c(t,6)),e+=b(63&t|128)}function h(t){for(var e,r=s(t),n=r.length,o=-1,i="";++o<n;)e=r[o],i+=u(e);return i}function p(){if(v>=m)throw Error("Invalid byte index");var t=255&g[v];if(v++,128==(192&t))return 63&t;throw Error("Invalid continuation byte")}function f(){var t,e,r,n,o;if(v>m)throw Error("Invalid byte index");if(v==m)return!1;if(t=255&g[v],v++,0==(128&t))return t;if(192==(224&t)){var e=p();if(o=(31&t)<<6|e,o>=128)return o;throw Error("Invalid continuation byte")}if(224==(240&t)){if(e=p(),r=p(),o=(15&t)<<12|e<<6|r,o>=2048)return o;throw Error("Invalid continuation byte")}if(240==(248&t)&&(e=p(),r=p(),n=p(),o=(15&t)<<18|e<<12|r<<6|n,o>=65536&&o<=1114111))return o;throw Error("Invalid WTF-8 detected")}function l(t){g=s(t),m=g.length,v=0;for(var e,r=[];(e=f())!==!1;)r.push(e);return a(r)}var d="object"==typeof e&&e,y=("object"==typeof t&&t&&t.exports==d&&t,"object"==typeof o&&o);y.global!==y&&y.window!==y||(i=y);var g,m,v,b=String.fromCharCode,w={version:"1.0.0",encode:h,decode:l};n=function(){return w}.call(e,r,e,t),!(void 0!==n&&(t.exports=n))}(this)}).call(e,r(12)(t),function(){return this}())},function(t,e){!function(){"use strict";for(var t="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",r=new Uint8Array(256),n=0;n<t.length;n++)r[t.charCodeAt(n)]=n;e.encode=function(e){var r,n=new Uint8Array(e),o=n.length,i="";for(r=0;r<o;r+=3)i+=t[n[r]>>2],i+=t[(3&n[r])<<4|n[r+1]>>4],i+=t[(15&n[r+1])<<2|n[r+2]>>6],i+=t[63&n[r+2]];return o%3===2?i=i.substring(0,i.length-1)+"=":o%3===1&&(i=i.substring(0,i.length-2)+"=="),i},e.decode=function(t){var e,n,o,i,s,a=.75*t.length,c=t.length,u=0;"="===t[t.length-1]&&(a--,"="===t[t.length-2]&&a--);var h=new ArrayBuffer(a),p=new Uint8Array(h);for(e=0;e<c;e+=4)n=r[t.charCodeAt(e)],o=r[t.charCodeAt(e+1)],i=r[t.charCodeAt(e+2)],s=r[t.charCodeAt(e+3)],p[u++]=n<<2|o>>4,p[u++]=(15&o)<<4|i>>2,p[u++]=(3&i)<<6|63&s;return h}}()},function(t,e){(function(e){function r(t){for(var e=0;e<t.length;e++){var r=t[e];if(r.buffer instanceof ArrayBuffer){var n=r.buffer;if(r.byteLength!==n.byteLength){var o=new Uint8Array(r.byteLength);o.set(new Uint8Array(n,r.byteOffset,r.byteLength)),n=o.buffer}t[e]=n}}}function n(t,e){e=e||{};var n=new i;r(t);for(var o=0;o<t.length;o++)n.append(t[o]);return e.type?n.getBlob(e.type):n.getBlob()}function o(t,e){return r(t),new Blob(t,e||{})}var i=e.BlobBuilder||e.WebKitBlobBuilder||e.MSBlobBuilder||e.MozBlobBuilder,s=function(){try{var t=new Blob(["hi"]);return 2===t.size}catch(t){return!1}}(),a=s&&function(){try{var t=new Blob([new Uint8Array([1,2])]);return 2===t.size}catch(t){return!1}}(),c=i&&i.prototype.append&&i.prototype.getBlob;t.exports=function(){return s?a?e.Blob:o:c?n:void 0}()}).call(e,function(){return this}())},function(t,e,r){function n(t){if(t)return o(t)}function o(t){for(var e in n.prototype)t[e]=n.prototype[e];return t}t.exports=n,n.prototype.on=n.prototype.addEventListener=function(t,e){return this._callbacks=this._callbacks||{},(this._callbacks["$"+t]=this._callbacks["$"+t]||[]).push(e),this},n.prototype.once=function(t,e){function r(){this.off(t,r),e.apply(this,arguments)}return r.fn=e,this.on(t,r),this},n.prototype.off=n.prototype.removeListener=n.prototype.removeAllListeners=n.prototype.removeEventListener=function(t,e){if(this._callbacks=this._callbacks||{},0==arguments.length)return this._callbacks={},this;var r=this._callbacks["$"+t];if(!r)return this;if(1==arguments.length)return delete this._callbacks["$"+t],this;for(var n,o=0;o<r.length;o++)if(n=r[o],n===e||n.fn===e){r.splice(o,1);break}return this},n.prototype.emit=function(t){this._callbacks=this._callbacks||{};var e=[].slice.call(arguments,1),r=this._callbacks["$"+t];if(r){r=r.slice(0);for(var n=0,o=r.length;n<o;++n)r[n].apply(this,e)}return this},n.prototype.listeners=function(t){return this._callbacks=this._callbacks||{},this._callbacks["$"+t]||[]},n.prototype.hasListeners=function(t){return!!this.listeners(t).length}},function(t,e){e.encode=function(t){var e="";for(var r in t)t.hasOwnProperty(r)&&(e.length&&(e+="&"),e+=encodeURIComponent(r)+"="+encodeURIComponent(t[r]));return e},e.decode=function(t){for(var e={},r=t.split("&"),n=0,o=r.length;n<o;n++){var i=r[n].split("=");e[decodeURIComponent(i[0])]=decodeURIComponent(i[1])}return e}},function(t,e){t.exports=function(t,e){var r=function(){};r.prototype=e.prototype,t.prototype=new r,t.prototype.constructor=t}},function(t,e){"use strict";function r(t){var e="";do e=s[t%a]+e,t=Math.floor(t/a);while(t>0);return e}function n(t){var e=0;for(h=0;h<t.length;h++)e=e*a+c[t.charAt(h)];return e}function o(){var t=r(+new Date);return t!==i?(u=0,i=t):t+"."+r(u++)}for(var i,s="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_".split(""),a=64,c={},u=0,h=0;h<a;h++)c[s[h]]=h;o.encode=r,o.decode=n,t.exports=o},function(t,e,r){(function(e){function n(){}function o(t){i.call(this,t),this.query=this.query||{},a||(e.___eio||(e.___eio=[]),a=e.___eio),this.index=a.length;var r=this;a.push(function(t){r.onData(t)}),this.query.j=this.index,e.document&&e.addEventListener&&e.addEventListener("beforeunload",function(){r.script&&(r.script.onerror=n)},!1)}var i=r(25),s=r(37);t.exports=o;var a,c=/\n/g,u=/\\n/g;s(o,i),o.prototype.supportsBinary=!1,o.prototype.doClose=function(){this.script&&(this.script.parentNode.removeChild(this.script),this.script=null),this.form&&(this.form.parentNode.removeChild(this.form),this.form=null,this.iframe=null),i.prototype.doClose.call(this)},o.prototype.doPoll=function(){var t=this,e=document.createElement("script");this.script&&(this.script.parentNode.removeChild(this.script),this.script=null),e.async=!0,e.src=this.uri(),e.onerror=function(e){t.onError("jsonp poll error",e)};var r=document.getElementsByTagName("script")[0];r?r.parentNode.insertBefore(e,r):(document.head||document.body).appendChild(e),this.script=e;var n="undefined"!=typeof navigator&&/gecko/i.test(navigator.userAgent);n&&setTimeout(function(){var t=document.createElement("iframe");document.body.appendChild(t),document.body.removeChild(t)},100)},o.prototype.doWrite=function(t,e){function r(){n(),e()}function n(){if(o.iframe)try{o.form.removeChild(o.iframe)}catch(t){o.onError("jsonp polling iframe removal error",t)}try{var t='<iframe src="javascript:0" name="'+o.iframeId+'">';i=document.createElement(t)}catch(t){i=document.createElement("iframe"),i.name=o.iframeId,i.src="javascript:0"}i.id=o.iframeId,o.form.appendChild(i),o.iframe=i}var o=this;if(!this.form){var i,s=document.createElement("form"),a=document.createElement("textarea"),h=this.iframeId="eio_iframe_"+this.index;s.className="socketio",s.style.position="absolute",s.style.top="-1000px",s.style.left="-1000px",s.target=h,s.method="POST",s.setAttribute("accept-charset","utf-8"),a.name="d",s.appendChild(a),document.body.appendChild(s),this.form=s,this.area=a}this.form.action=this.uri(),n(),t=t.replace(u,"\\\n"),this.area.value=t.replace(c,"\\n");try{this.form.submit()}catch(t){}this.iframe.attachEvent?this.iframe.onreadystatechange=function(){"complete"===o.iframe.readyState&&r();
 }:this.iframe.onload=r}}).call(e,function(){return this}())},function(t,e,r){(function(e){function n(t){var e=t&&t.forceBase64;e&&(this.supportsBinary=!1),this.perMessageDeflate=t.perMessageDeflate,this.usingBrowserWebSocket=p&&!t.forceNode,this.usingBrowserWebSocket||(f=o),i.call(this,t)}var o,i=r(26),s=r(27),a=r(36),c=r(37),u=r(38),h=r(3)("engine.io-client:websocket"),p=e.WebSocket||e.MozWebSocket;if("undefined"==typeof window)try{o=r(41)}catch(t){}var f=p;f||"undefined"!=typeof window||(f=o),t.exports=n,c(n,i),n.prototype.name="websocket",n.prototype.supportsBinary=!0,n.prototype.doOpen=function(){if(this.check()){var t=this.uri(),e=void 0,r={agent:this.agent,perMessageDeflate:this.perMessageDeflate};r.pfx=this.pfx,r.key=this.key,r.passphrase=this.passphrase,r.cert=this.cert,r.ca=this.ca,r.ciphers=this.ciphers,r.rejectUnauthorized=this.rejectUnauthorized,this.extraHeaders&&(r.headers=this.extraHeaders),this.localAddress&&(r.localAddress=this.localAddress);try{this.ws=this.usingBrowserWebSocket?new f(t):new f(t,e,r)}catch(t){return this.emit("error",t)}void 0===this.ws.binaryType&&(this.supportsBinary=!1),this.ws.supports&&this.ws.supports.binary?(this.supportsBinary=!0,this.ws.binaryType="nodebuffer"):this.ws.binaryType="arraybuffer",this.addEventListeners()}},n.prototype.addEventListeners=function(){var t=this;this.ws.onopen=function(){t.onOpen()},this.ws.onclose=function(){t.onClose()},this.ws.onmessage=function(e){t.onData(e.data)},this.ws.onerror=function(e){t.onError("websocket error",e)}},n.prototype.write=function(t){function r(){n.emit("flush"),setTimeout(function(){n.writable=!0,n.emit("drain")},0)}var n=this;this.writable=!1;for(var o=t.length,i=0,a=o;i<a;i++)!function(t){s.encodePacket(t,n.supportsBinary,function(i){if(!n.usingBrowserWebSocket){var s={};if(t.options&&(s.compress=t.options.compress),n.perMessageDeflate){var a="string"==typeof i?e.Buffer.byteLength(i):i.length;a<n.perMessageDeflate.threshold&&(s.compress=!1)}}try{n.usingBrowserWebSocket?n.ws.send(i):n.ws.send(i,s)}catch(t){h("websocket closed before onclose event")}--o||r()})}(t[i])},n.prototype.onClose=function(){i.prototype.onClose.call(this)},n.prototype.doClose=function(){"undefined"!=typeof this.ws&&this.ws.close()},n.prototype.uri=function(){var t=this.query||{},e=this.secure?"wss":"ws",r="";this.port&&("wss"===e&&443!==Number(this.port)||"ws"===e&&80!==Number(this.port))&&(r=":"+this.port),this.timestampRequests&&(t[this.timestampParam]=u()),this.supportsBinary||(t.b64=1),t=a.encode(t),t.length&&(t="?"+t);var n=this.hostname.indexOf(":")!==-1;return e+"://"+(n?"["+this.hostname+"]":this.hostname)+r+this.path+t},n.prototype.check=function(){return!(!f||"__initialize"in f&&this.name===n.prototype.name)}}).call(e,function(){return this}())},function(t,e){},function(t,e){var r=[].indexOf;t.exports=function(t,e){if(r)return t.indexOf(e);for(var n=0;n<t.length;++n)if(t[n]===e)return n;return-1}},function(t,e){(function(e){var r=/^[\],:{}\s]*$/,n=/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,o=/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,i=/(?:^|:|,)(?:\s*\[)+/g,s=/^\s+/,a=/\s+$/;t.exports=function(t){return"string"==typeof t&&t?(t=t.replace(s,"").replace(a,""),e.JSON&&JSON.parse?JSON.parse(t):r.test(t.replace(n,"@").replace(o,"]").replace(i,""))?new Function("return "+t)():void 0):null}}).call(e,function(){return this}())},function(t,e,r){"use strict";function n(t,e,r){this.io=t,this.nsp=e,this.json=this,this.ids=0,this.acks={},this.receiveBuffer=[],this.sendBuffer=[],this.connected=!1,this.disconnected=!0,r&&r.query&&(this.query=r.query),this.io.autoConnect&&this.open()}var o=r(7),i=r(35),s=r(45),a=r(46),c=r(47),u=r(3)("socket.io-client:socket"),h=r(29);t.exports=e=n;var p={connect:1,connect_error:1,connect_timeout:1,connecting:1,disconnect:1,error:1,reconnect:1,reconnect_attempt:1,reconnect_failed:1,reconnect_error:1,reconnecting:1,ping:1,pong:1},f=i.prototype.emit;i(n.prototype),n.prototype.subEvents=function(){if(!this.subs){var t=this.io;this.subs=[a(t,"open",c(this,"onopen")),a(t,"packet",c(this,"onpacket")),a(t,"close",c(this,"onclose"))]}},n.prototype.open=n.prototype.connect=function(){return this.connected?this:(this.subEvents(),this.io.open(),"open"===this.io.readyState&&this.onopen(),this.emit("connecting"),this)},n.prototype.send=function(){var t=s(arguments);return t.unshift("message"),this.emit.apply(this,t),this},n.prototype.emit=function(t){if(p.hasOwnProperty(t))return f.apply(this,arguments),this;var e=s(arguments),r=o.EVENT;h(e)&&(r=o.BINARY_EVENT);var n={type:r,data:e};return n.options={},n.options.compress=!this.flags||!1!==this.flags.compress,"function"==typeof e[e.length-1]&&(u("emitting packet with ack id %d",this.ids),this.acks[this.ids]=e.pop(),n.id=this.ids++),this.connected?this.packet(n):this.sendBuffer.push(n),delete this.flags,this},n.prototype.packet=function(t){t.nsp=this.nsp,this.io.packet(t)},n.prototype.onopen=function(){u("transport is open - connecting"),"/"!==this.nsp&&(this.query?this.packet({type:o.CONNECT,query:this.query}):this.packet({type:o.CONNECT}))},n.prototype.onclose=function(t){u("close (%s)",t),this.connected=!1,this.disconnected=!0,delete this.id,this.emit("disconnect",t)},n.prototype.onpacket=function(t){if(t.nsp===this.nsp)switch(t.type){case o.CONNECT:this.onconnect();break;case o.EVENT:this.onevent(t);break;case o.BINARY_EVENT:this.onevent(t);break;case o.ACK:this.onack(t);break;case o.BINARY_ACK:this.onack(t);break;case o.DISCONNECT:this.ondisconnect();break;case o.ERROR:this.emit("error",t.data)}},n.prototype.onevent=function(t){var e=t.data||[];u("emitting event %j",e),null!=t.id&&(u("attaching ack callback to event"),e.push(this.ack(t.id))),this.connected?f.apply(this,e):this.receiveBuffer.push(e)},n.prototype.ack=function(t){var e=this,r=!1;return function(){if(!r){r=!0;var n=s(arguments);u("sending ack %j",n);var i=h(n)?o.BINARY_ACK:o.ACK;e.packet({type:i,id:t,data:n})}}},n.prototype.onack=function(t){var e=this.acks[t.id];"function"==typeof e?(u("calling ack %s with %j",t.id,t.data),e.apply(this,t.data),delete this.acks[t.id]):u("bad ack %s",t.id)},n.prototype.onconnect=function(){this.connected=!0,this.disconnected=!1,this.emit("connect"),this.emitBuffered()},n.prototype.emitBuffered=function(){var t;for(t=0;t<this.receiveBuffer.length;t++)f.apply(this,this.receiveBuffer[t]);for(this.receiveBuffer=[],t=0;t<this.sendBuffer.length;t++)this.packet(this.sendBuffer[t]);this.sendBuffer=[]},n.prototype.ondisconnect=function(){u("server disconnect (%s)",this.nsp),this.destroy(),this.onclose("io server disconnect")},n.prototype.destroy=function(){if(this.subs){for(var t=0;t<this.subs.length;t++)this.subs[t].destroy();this.subs=null}this.io.destroy(this)},n.prototype.close=n.prototype.disconnect=function(){return this.connected&&(u("performing disconnect (%s)",this.nsp),this.packet({type:o.DISCONNECT})),this.destroy(),this.connected&&this.onclose("io client disconnect"),this},n.prototype.compress=function(t){return this.flags=this.flags||{},this.flags.compress=t,this}},function(t,e){function r(t,e){var r=[];e=e||0;for(var n=e||0;n<t.length;n++)r[n-e]=t[n];return r}t.exports=r},function(t,e){"use strict";function r(t,e,r){return t.on(e,r),{destroy:function(){t.removeListener(e,r)}}}t.exports=r},function(t,e){var r=[].slice;t.exports=function(t,e){if("string"==typeof e&&(e=t[e]),"function"!=typeof e)throw new Error("bind() requires a function");var n=r.call(arguments,2);return function(){return e.apply(t,n.concat(r.call(arguments)))}}},function(t,e){function r(t){t=t||{},this.ms=t.min||100,this.max=t.max||1e4,this.factor=t.factor||2,this.jitter=t.jitter>0&&t.jitter<=1?t.jitter:0,this.attempts=0}t.exports=r,r.prototype.duration=function(){var t=this.ms*Math.pow(this.factor,this.attempts++);if(this.jitter){var e=Math.random(),r=Math.floor(e*this.jitter*t);t=0==(1&Math.floor(10*e))?t-r:t+r}return 0|Math.min(t,this.max)},r.prototype.reset=function(){this.attempts=0},r.prototype.setMin=function(t){this.ms=t},r.prototype.setMax=function(t){this.max=t},r.prototype.setJitter=function(t){this.jitter=t}}])});
 /*
-    1.0.10
+    1.0.15
     高京
     2016-08-29
     JS类库
@@ -2500,6 +3206,29 @@ var functions = {
             });
         });
     },
+
+    /*
+        高京
+        2017-10-25
+        过滤表单非法字符
+        @str: 需要过滤的字符串
+    */
+    convers: function(str) {
+
+        var result = str;
+
+        var regExp = new RegExp("\'", "ig");
+        result = result.replace(regExp, "&acute;");
+
+        regExp = new RegExp("\<", "ig");
+        result = result.replace(regExp, "&lt;");
+
+        regExp = new RegExp("\"", "ig");
+        result = result.replace(regExp, "&quot;");
+
+        return result;
+    },
+
     /*
         高京
         2017-08-02
@@ -2550,24 +3279,57 @@ var functions = {
         2017-08-02
         解决ios端fixed居底input被键盘遮挡的问题
         @dom_selector: 监听focus和blur的Dom的选择器
+        @autocheck: true|false。自动执行innerHeight的改变监听，解决h5页面input.focus()后不能进入.on("focus")的handler的问题。默认false
     */
-    fix_ios_fixed_bottom_input: function(dom_selector) {
+    fix_ios_fixed_bottom_input: function(dom_selector, autocheck) {
 
-        // 安卓orIOS
-        // var device;
-        if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-            // device = "ios";
+        autocheck = autocheck || false;
+
+        // IOS版本（安卓则直接退出）
+        var regExp = new RegExp(/.+os (\w+?)_\w+_\w+ like mac os x.+ /ig),
+            iosEdition = regExp.exec(navigator.userAgent);
+
+        if (iosEdition) {
+            iosEdition = parseInt(iosEdition[1]);
         } else {
             return;
         }
 
         var footer_input = $(dom_selector);
+        var interval,
+            window_innerHeight_px,
+            _window_innerHeight_px;
 
-        footer_input.focus(function() {
-            setTimeout(function() {
+        var exec = function() {
+
+            _window_innerHeight_px = window.innerHeight;
+
+            // var dt = new Date();
+            // footer_input.val(dt.getTime() + ":" + window_innerHeight_px + " : " + _window_innerHeight_px);
+
+            // 如果innerHeight变化，或者ios版本小于11（ios10 首先innerHeight不会有变化，其次在执行下面代码时，不会有屏闪，所以持续interval除了性能，没有问题）
+            if (window_innerHeight_px != _window_innerHeight_px || iosEdition < 11) {
                 document.body.scrollTop = document.body.scrollHeight; //获取焦点后将浏览器内所有内容高度赋给浏览器滚动部分高度
-            }, 1500);
+                window_innerHeight_px = _window_innerHeight_px;
+            }
+        };
+
+        // 初始化window_innerHeight_px，开始interval
+        var focus_handler = function() {
+            window_innerHeight_px = 0;
+            interval = setInterval(function() {
+                exec();
+            }, 1000);
+        }
+
+        footer_input.on("focus", focus_handler);
+
+        footer_input.on("blur", function() {
+            clearInterval(interval);
         });
+
+        if (autocheck)
+            focus_handler();
     },
     /*
         高京
@@ -2665,10 +3427,13 @@ var functions = {
                 if (opt.callback)
                     opt.callback();
                 return;
-            } else
-                setTimeout(function() {
-                    set_scrollTop();
-                }, perTime);
+            } else {
+                var stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + $(window).height() >= obj[0].scrollHeight);
+                if (!stop_toDown_bool)
+                    setTimeout(function() {
+                        set_scrollTop();
+                    }, perTime);
+            }
         };
 
         set_scrollTop();
@@ -3055,11 +3820,13 @@ define('modules/footer_button_mute',[],function() {
 define('app/chat_servicer',[
     "lib/socket.io.min",
     "lib/functions",
-    "modules/footer_button_mute"
+    "modules/footer_button_mute",
+    "modules/emotion",
 ], function(
     $io,
     $func,
-    $mute
+    $mute,
+    $emotion
 ) {
     var chat_servicer = {
         RECORD_COUNT: 10,
@@ -3069,6 +3836,9 @@ define('app/chat_servicer',[
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
+
+            // 监听window的点击（关闭某些个窗口）
+            that.window_click_Listener.apply(that);
 
             // 静音按钮的状态判断和监听
             $mute.init.apply($mute, [{
@@ -3084,10 +3854,31 @@ define('app/chat_servicer',[
             // 发送消息按键监听
             that.textarea_keypress_Listener.apply(that);
 
+            // 表情按钮监听
+            that.tool_icon_emotion_Listener.apply(that);
+
+            // 表情li监听
+            that.emotion_Listener.apply(that);
+
             // 连接socket
             that.socket_connect.apply(that);
 
+            // 初始化表情框
+            $emotion.init.apply($emotion);
+
         },
+
+        // 监听window的点击（关闭某些个窗口）
+        window_click_Listener: function() {
+            var window_click_handler = function(e) {
+                var eobj = $(e.target);
+                if (eobj.hasClass("emotion_box") || eobj.parents(".emotion_box").length > 0)
+                    return;
+                $(".emotion_box.show").removeClass("show");
+            };
+            $(window).on("click", window_click_handler);
+        },
+
         // 左侧会话列表的点击监听
         left_chatLine_click_Listener: function() {
             var that = this;
@@ -3220,12 +4011,37 @@ define('app/chat_servicer',[
                 });
             });
         },
+        // 表情按钮监听
+        tool_icon_emotion_Listener: function() {
+            $(".tool_icon_left.emotion").unbind().on("click", function(e) {
+
+                e.stopPropagation();
+
+                var emotion_box = $(".emotion_box");
+
+                emotion_box.toggleClass("show");
+            });
+        },
+
+        // 表情点击
+        emotion_Listener: function() {
+            var emotion_li = $(".emotion_box .screen_li li");
+
+            emotion_li.unbind().on("click", function() {
+
+                var textarea = $(".content_fixed textarea");
+
+                textarea.val(textarea.val() + $(this).attr("name"));
+            });
+        },
+
         // 发送消息按键监听
         textarea_keypress_Listener: function() {
             var that = this;
+            var textarea=$(".content_fixed textarea");
 
-            $(".content_fixed textarea").unbind().on("keypress", function(e) {
-                var sendKind = $(".tool_icon.sendKey").attr("kind");
+            $(window).unbind("keypress").on("keypress", function(e) {
+                var sendKind = $(".tool_icon_right.sendKey").attr("kind");
                 var send = false;
                 if (sendKind == 1 && e.charCode == 13 && !(e.altKey || e.ctrlKey || e.shiftKey)) { // Enter发送
                     send = true;
@@ -3233,18 +4049,21 @@ define('app/chat_servicer',[
 
                 if (send) {
                     var kind = 2,
-                        msg = $(this).val(),
+                        msg = textarea.val(),
                         cid = $(".comm_chat_list_template .chat_line.now").attr("cid"),
                         sid = Base_meta.sid;
 
                     if (msg.trim() === "") {
                         that.show_error_dialog.apply(that, ["请键入内容"]);
                     } else {
-                        that.send_message(kind, msg.replace(/  /g, "&nbsp;&nbsp;").replace(/\n/g, "<br />"), cid, sid);
+                        that.send_message(kind, $func.convers(msg.replace(/  /g, "&nbsp;&nbsp;").replace(/\n/g, "<br />")), cid, sid);
                     }
 
                     // 清空消息框
-                    $(this).val("");
+                    textarea.val("");
+
+                    // 隐藏表情框
+                    $(".emotion_box.show").removeClass("show");
 
                     return false;
                 }
@@ -3355,7 +4174,7 @@ define('app/chat_servicer',[
                             chat_template.find("img").attr("src", chat.client.headimg);
                             chat_template.find(".nickname").text(chat.client.nickname);
                             chat_template.find(".last_time").text($func.dateFormat_wx(last_time).toLocaleString());
-                            chat_template.find(".last_content").text(chat.last_content);
+                            chat_template.find(".last_content").html(chat.last_content);
                             chat_template.prependTo(".comm_chat_list_template");
 
                             // 监听左侧会话列表
@@ -3366,7 +4185,7 @@ define('app/chat_servicer',[
                 } else { // 有此发送者记录
 
                     chat_line.find(".last_time").text($func.dateFormat_wx(rdate));
-                    chat_line.find(".last_content").text(msg);
+                    chat_line.find(".last_content").html(msg);
 
                     // 不在顶部，则移动至顶部
                     if (chat_line.parent().find("li").index(chat_line) !== 0)
@@ -3463,6 +4282,11 @@ define('app/chat_servicer',[
 
                 that.lastTime = date.getTime();
 
+            }
+
+            // 如果非系统消息，做内容的表情过滤
+            if (kind > 1) {
+                msg = $emotion.emotion_filter(msg);
             }
 
             // 装载内容

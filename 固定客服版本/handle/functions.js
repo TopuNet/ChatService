@@ -1,7 +1,7 @@
 /*
  *@ 高京
  *@ 2016-08-10
- *@ v1.1.1
+ *@ v1.2.1
  *@ 全局公共方法，添加方法的话：1.请先确认没有功能类同的方法可以使用（避免同一功能多个类同方法存在）；2.要尽量考虑可移植性和复用性，不要为了实现某一单一功能而增加本文件代码量；
                                 3.将调用方法写在顶部注释中；4.有新方法添加时，在群里吼一声
  */
@@ -11,10 +11,14 @@ exports.subDomain_default = "www"; // 默认二级域名，没找到主域名或
 
 /*
    高京
+        *【同步】 过滤表单非法字符
+        * str: 需要过滤的字符串
+        convers(str)
+
         *【同步】格式化日期。今天的日期只显示时间。不含秒
         * timestamp：待格式化时间戳
         * show_time：非今天的日期是否显示具体时间（不含秒）。true/false(默认)
-        formatTimeStamp(timestamp, show_time) {
+        formatTimeStamp(timestamp, show_time) 
 
         *【同步】生成随机数随机码。返回字符串
         * n: 位数，数字+字母的组合时请键入偶数
@@ -159,7 +163,7 @@ exports.subDomain_default = "www"; // 默认二级域名，没找到主域名或
         * height：高。0为按比例缩放。不为0时，可能会变形
         MakeThumb (originalImagePath, outputPath, width, height) 
      
-        *【同步】格式化Textarea输入的字符串，替换空格和回车（注意用输出。返回字符串
+        *【同步】格式化Textarea输入的字符串，替换空格和回车（注意用<%- %>输出。返回字符串
         * str：要格式化的字符串
         formatTextArea(str)
 
@@ -239,6 +243,27 @@ var images = require("images"); //图片处理模块，MakeThumb和AddWatermark�
 var path = require('path'); //给图片加水印用
 var xml2js = require("xml2js"); //解析xml为json用
 
+/*
+    高京
+    2017-10-25
+    【同步】 过滤表单非法字符
+    *@ str: 需要过滤的字符串
+*/
+exports.convers = function(str) {
+
+    var result = str;
+
+    var regExp = new RegExp("\'", "ig");
+    result = result.replace(regExp, "&acute;");
+
+    regExp = new RegExp("\<", "ig");
+    result = result.replace(regExp, "&lt;");
+
+    regExp = new RegExp("\"", "ig");
+    result = result.replace(regExp, "&quot;");
+
+    return result;
+};
 
 /*
     高京
@@ -334,13 +359,13 @@ exports.xmlToJson = function(xmlString, CallBack_success) {
 exports.Error = function(res, err) {
     err.status = err.status || 404;
     res.status(err.status);
-    if (config.CacheData.Init !== null) {
+    if(config.CacheData.Init!==null){
         res.render('./err/404.html', {
             "common": config.GetCommon(err.status, "", "", 1),
             "err": (err.status) + ": " + err.message.replace(/[\n\r]/g, " ").replace(/\"/g, "\\\""),
-            "Advertise": config.CacheData.Advertise.list,
-            "Init": config.CacheData.Init.list,
-            "Info": config.CacheData.Info.list
+            "Advertise":config.CacheData.Advertise.list,
+            "Init":config.CacheData.Init.list,
+            "Info":config.CacheData.Info.list
         });
     }
 };
@@ -636,8 +661,6 @@ exports.CreateTopuSignatureSync = function(ParamsJsonObj, non_str, stamp) {
     _sign += "non_str=" + _non_str;
     _sign += "stamp=" + _stamp;
     _sign += "keySecret=" + _KeySecretNew;
-
-    // console.log("\n\nfunc", 579, "_sign:\n", _sign);
 
     //Hash加密
     _sign = _handle.CreateHash(_sign, "sha1").toLowerCase();
@@ -1307,15 +1330,15 @@ exports.MailSend = function(Subject, isHtml, Body, HtmlBody, FromName, MailTo, B
         var auth = {
             user: config.mail_server.split('|')[0],
             pass: config.mail_server.split('|')[1]
-            // user: "x3b_net_cn@qq.com",
-            // pass: "gpcockjwysqkddia"
-            //pass:"x3bnetcn123456"
-            // user: "x3b_net_cn_www@sina.com",
-            // pass: "x3b_net_cn123456"
-            // user: "x3b_net_cn@sohu.com",
-            // pass: "x3b_net_cn123456"
-            // user: "x3b_net_cn@yahoo.com",
-            // pass: "x3bnetcn123456"
+                // user: "x3b_net_cn@qq.com",
+                // pass: "gpcockjwysqkddia"
+                //pass:"x3bnetcn123456"
+                // user: "x3b_net_cn_www@sina.com",
+                // pass: "x3b_net_cn123456"
+                // user: "x3b_net_cn@sohu.com",
+                // pass: "x3b_net_cn123456"
+                // user: "x3b_net_cn@yahoo.com",
+                // pass: "x3bnetcn123456"
         };
 
         var transporter = nodemailer.createTransport({
@@ -1436,7 +1459,7 @@ exports.MakeThumb = function(originalImagePath, outputPath, _width, _height) {
 /*
  *@ 高京
  *@ 20151120
- *@【同步】格式化Textarea输入的字符串，替换空格和回车（注意用输出。返回字符串
+ *@【同步】格式化Textarea输入的字符串，替换空格和回车（注意用<%- %>输出。返回字符串
  *@ str：要格式化的字符串
  */
 exports.formatTextArea = function(str) {

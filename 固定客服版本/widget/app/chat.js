@@ -15,11 +15,13 @@
 define([
     "lib/socket.io.min",
     "lib/functions",
-    "modules/footer_button_mute"
+    "modules/footer_button_mute",
+    "modules/emotion"
 ], function(
     $io,
     $func,
-    $footer_button_mute
+    $footer_button_mute,
+    $emotion
 ) {
     var chat = {
         RECORD_COUNT: 10, // 一次读取的记录条数
@@ -126,20 +128,68 @@ define([
             }, 500);
         },
 
-        // 处理服务器端渲染err，无err则执行socket_connect⬇️
+        // 设置底部input盒高度
+        set_messageContent_height: function() {
+
+            var footer_button = $(".footer_button"),
+                submit_height_px = parseFloat(footer_button.find(".weui-btn_primary").css("line-height").replace("px", ""));
+
+            footer_button.find(".message_content_box,.message_content_div,.message_content_input").css({
+                "height": submit_height_px + "px",
+                "line-height": submit_height_px + "px"
+            });
+            footer_button.find(".message_content_box").css("display", "block");
+        },
+
+        // 监听底部input盒
+        messageContentBox_Listener: function() {
+            var that = this;
+
+            var message_content_box = $(".message_content_box"),
+                message_div = message_content_box.find(".message_content_div"),
+                message_input = message_content_box.find(".message_content_input");
+
+            message_content_box.unbind().on("click", function() {
+                message_div.css("display", "none");
+                message_input.css("display", "block");
+            });
+        },
+
+        // 监听底部input值改变
+        messageContentInput_change_Listener: function() {
+
+            var message_content_box = $(".message_content_box"),
+                message_div = message_content_box.find(".message_content_div"),
+                message_input = message_content_box.find(".message_content_input");
+
+            message_input.unbind("change").on("change", function() {
+                message_div.text(message_input.val());
+            });
+        },
+
+        // 处理服务器端渲染err，无err则执行socket_connect⬇
         deal_err: function() {
             var that = this;
 
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1"
+                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1";
                 });
             } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
                     location.href = "list";
                 });
             } else {
+
+                // 设置底部input高度
+                that.set_messageContent_height.apply(that);
+
+                // 监听底部input盒
+                that.messageContentBox_Listener.apply(that);
+
+                // 监听底部input值改变
+                that.messageContentInput_change_Listener.apply(that);
 
                 // 判断是否需要显示“查看更多历史消息”
                 that.jduge_show_more_records.apply(that);
@@ -164,6 +214,17 @@ define([
 
                 // 监听返回按钮
                 that.back_button_Listener.apply(that);
+
+                // 监听表情和键盘按钮
+                that.emotion_button_Listener.apply(that);
+
+                // 监听表情面板
+                $emotion.init.apply($emotion, [{
+                    device: "mobile"
+                    // box_selector: 外盒选择器， 默认值：.emotion_box,
+                    // pic_ul_selector: 图片li的ul盒选择器， 此盒必须存在于box_selector中， 且值中不用包含box_selector。 默认值： ul,
+                    // point_ul_selector: 圆点li的ul盒选择器， 空字符串为无圆点。 此盒不必存在于box_selector中。 默认值：.emotion_box.point_li
+                }]);
             }
         },
 
@@ -289,6 +350,11 @@ define([
 
             }
 
+            // 如果非系统消息，做内容的表情过滤
+            if (kind > 1) {
+                msg = $emotion.emotion_filter(msg);
+            }
+
             // 装载内容
             li.find("p").html("<span class=\"arrow\"></span>" + msg);
 
@@ -366,7 +432,8 @@ define([
         form_send_submit_Listener: function() {
             var that = this;
             var form = $(".footer_button form");
-            var input = form.find(".message_content");
+            var input_div = form.find(".message_content_div");
+            var input = form.find(".message_content_input");
 
             form.unbind().on("submit", function(e) {
                 e.preventDefault();
@@ -377,8 +444,9 @@ define([
                 if (text === "") {
                     that.show_error_dialog("请键入内容");
                 } else {
-                    that.send_message.apply(that, [2, text, Base_meta.cid, Base_meta.sid]);
+                    that.send_message.apply(that, [2, $func.convers(text), Base_meta.cid, Base_meta.sid]);
                     input.val("");
+                    input_div.text("");
                 }
             });
         },
@@ -387,6 +455,134 @@ define([
         back_button_Listener: function() {
             $(".footer_button .back").unbind().on("click", function() {
                 location.href = "/?cid=" + Base_meta.cid.toString();
+            });
+        },
+
+        // 重置wrapper_fixed_space高度
+        wrapper_fixed_space_reset_height: function() {
+
+            var that = this;
+            var footer_button = $(".footer_button");
+
+            var footer_button_height_px = footer_button.height(),
+                fixed_space = $(".fixed_space");
+
+            fixed_space.css("height", footer_button_height_px + "px");
+
+            that.rollToBottom.apply(that);
+        },
+
+        // 监听表情和键盘按钮
+        emotion_button_Listener: function() {
+            var that = this;
+            var footer_button = $(".footer_button");
+
+            var footer_input_box = footer_button.find(".message_content_box");
+            var footer_input_div = footer_button.find(".message_content_div");
+            var footer_input = footer_button.find(".message_content_input");
+
+            // that.send_message(1, "438:innerHeight:" + window.innerHeight);
+            // setInterval(function() {
+            //     that.send_message(1, "440:innerHeight:" + window.innerHeight);
+            // }, 1000);
+
+            // 收起表情面板，让input显示并获得焦点
+            var setInputEnableFocus = function() {
+
+                $(".footer_button").removeClass("showEmotion");
+                // footer_input.removeAttr("disabled");
+                footer_input_div.css("display", "none");
+                footer_input.css("display", "block").focus();
+                $func.fix_ios_fixed_bottom_input(".footer_button", true);
+            };
+
+            footer_button.find(".emotion").unbind().on("click", function() {
+
+                if (footer_button.hasClass("showEmotion")) {
+                    setInputEnableFocus();
+                } else {
+
+                    // 展开footer_button
+                    $(".footer_button").addClass("showEmotion");
+
+                    // 切换footer_input的显示
+                    footer_input.css("display", "none");
+                    footer_input_div.css("display", "block");
+
+                    // 监听input_box的点击
+                    footer_input_box.unbind().on("click", function() {
+                        setInputEnableFocus();
+                    });
+
+                    // 在滑动footer_button时，禁止滑动stoped_wrapper
+                    $(window).on("touchmove", function(e) {
+                        var touch_footer = $(e.target).parents(".footer_button").length > 0;
+                        if (touch_footer) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    });
+
+                    // 监听表情点击
+                    that.emotion_Listener.apply(that);
+                }
+
+            });
+
+            footer_button.unbind().on("webkitTransitionEnd transitionEnd", function(e) {
+
+                e.preventDefault();
+
+                // 重置wrapper_fixed_space高度
+                that.wrapper_fixed_space_reset_height.apply(that);
+
+            });
+        },
+
+        // 监听表情点击
+        emotion_Listener: function() {
+
+            var footer_button = $(".footer_button"),
+                emotion_button = footer_button.find(".screen_li li:not(.space)"),
+                input = footer_button.find(".message_content_input"),
+                input_div = footer_button.find(".message_content_div");
+
+            emotion_button.unbind().on("click", function() {
+                var _this = $(this);
+
+                var text_value = input.val();
+
+                if (_this.hasClass("del")) {
+                    if (text_value.length === 0)
+                        return;
+
+                    var regRex = new RegExp(/^.*(\[.+?\])$/ig);
+
+                    var result = regRex.exec(text_value);
+
+                    var exec_del_charactor = function() {
+                        text_value = text_value.substring(0, text_value.length - 1);
+                    };
+
+                    if (result) {
+                        if (comm_emotion.emotion_name_list &&
+                            comm_emotion.emotion_name_list.length &&
+                            comm_emotion.emotion_name_list.indexOf(result[1]) > -1) {
+                            text_value = text_value.substring(0, text_value.length - result[1].length);
+                        } else {
+                            exec_del_charactor();
+                        }
+                    } else {
+                        exec_del_charactor();
+                    }
+
+                    input.val(text_value);
+                    input_div.text(text_value);
+
+                } else {
+                    input.val(text_value + _this.attr("name"));
+                    input_div.text(input.val());
+                }
             });
         }
     };

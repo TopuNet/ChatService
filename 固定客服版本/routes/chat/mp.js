@@ -10,6 +10,7 @@ var router = require("express").Router(),
     mongo = require("../../handle/mongodb"),
     config = require("../../handle/config"),
     getRecord_handle = require("../../handle/getRecords"),
+    emotion_handle = require("../../handle/emotion"),
     chat_config = require("../../handle/chat_config"),
     login_bid = -1, // 登录商家bid
     login_route = "/mp/login", // 登录页
@@ -84,7 +85,15 @@ var mw_check_login_status = function(req, res, next) {
 // 主管理页
 router.get("/", mw_check_login_status, function(req, res) {
 
+    var emotion_name_list = [];
 
+    var emotion_deal = function(callback) {
+        emotion_handle.emotion_name_list.forEach(function(emotion) {
+            emotion_name_list.push("\"" + emotion.toString() + "\"");
+        });
+
+        callback(null);
+    };
 
     // 验证bid状态
     var check_bid = function(callback) {
@@ -121,6 +130,7 @@ router.get("/", mw_check_login_status, function(req, res) {
             // console.log("\n\nmp", 55, "servicers:\n", servicers);
             res.render("Chat/mp.html", {
                 servicers: servicers,
+                emotion_name_list: emotion_name_list,
                 comm_talk_list_template: []
             });
         }
@@ -128,6 +138,7 @@ router.get("/", mw_check_login_status, function(req, res) {
 
     // 执行async
     async.waterfall([
+        emotion_deal, // 处理emotion_name_list
         check_bid, // 验证bid状态
         mongo.connect_async, // 连接mongodb
         get_servicer_list // 获取客服列表

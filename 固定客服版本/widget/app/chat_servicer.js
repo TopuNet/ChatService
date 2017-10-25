@@ -14,11 +14,13 @@
 define([
     "lib/socket.io.min",
     "lib/functions",
-    "modules/footer_button_mute"
+    "modules/footer_button_mute",
+    "modules/emotion",
 ], function(
     $io,
     $func,
-    $mute
+    $mute,
+    $emotion
 ) {
     var chat_servicer = {
         RECORD_COUNT: 10,
@@ -28,6 +30,9 @@ define([
 
             that.loadingToast = $(".loadingToast");
             that.iosDialog2 = $("#iosDialog2");
+
+            // 监听window的点击（关闭某些个窗口）
+            that.window_click_Listener.apply(that);
 
             // 静音按钮的状态判断和监听
             $mute.init.apply($mute, [{
@@ -43,10 +48,31 @@ define([
             // 发送消息按键监听
             that.textarea_keypress_Listener.apply(that);
 
+            // 表情按钮监听
+            that.tool_icon_emotion_Listener.apply(that);
+
+            // 表情li监听
+            that.emotion_Listener.apply(that);
+
             // 连接socket
             that.socket_connect.apply(that);
 
+            // 初始化表情框
+            $emotion.init.apply($emotion);
+
         },
+
+        // 监听window的点击（关闭某些个窗口）
+        window_click_Listener: function() {
+            var window_click_handler = function(e) {
+                var eobj = $(e.target);
+                if (eobj.hasClass("emotion_box") || eobj.parents(".emotion_box").length > 0)
+                    return;
+                $(".emotion_box.show").removeClass("show");
+            };
+            $(window).on("click", window_click_handler);
+        },
+
         // 左侧会话列表的点击监听
         left_chatLine_click_Listener: function() {
             var that = this;
@@ -179,12 +205,37 @@ define([
                 });
             });
         },
+        // 表情按钮监听
+        tool_icon_emotion_Listener: function() {
+            $(".tool_icon_left.emotion").unbind().on("click", function(e) {
+
+                e.stopPropagation();
+
+                var emotion_box = $(".emotion_box");
+
+                emotion_box.toggleClass("show");
+            });
+        },
+
+        // 表情点击
+        emotion_Listener: function() {
+            var emotion_li = $(".emotion_box .screen_li li");
+
+            emotion_li.unbind().on("click", function() {
+
+                var textarea = $(".content_fixed textarea");
+
+                textarea.val(textarea.val() + $(this).attr("name"));
+            });
+        },
+
         // 发送消息按键监听
         textarea_keypress_Listener: function() {
             var that = this;
+            var textarea=$(".content_fixed textarea");
 
-            $(".content_fixed textarea").unbind().on("keypress", function(e) {
-                var sendKind = $(".tool_icon.sendKey").attr("kind");
+            $(window).unbind("keypress").on("keypress", function(e) {
+                var sendKind = $(".tool_icon_right.sendKey").attr("kind");
                 var send = false;
                 if (sendKind == 1 && e.charCode == 13 && !(e.altKey || e.ctrlKey || e.shiftKey)) { // Enter发送
                     send = true;
@@ -192,18 +243,21 @@ define([
 
                 if (send) {
                     var kind = 2,
-                        msg = $(this).val(),
+                        msg = textarea.val(),
                         cid = $(".comm_chat_list_template .chat_line.now").attr("cid"),
                         sid = Base_meta.sid;
 
                     if (msg.trim() === "") {
                         that.show_error_dialog.apply(that, ["请键入内容"]);
                     } else {
-                        that.send_message(kind, msg.replace(/  /g, "&nbsp;&nbsp;").replace(/\n/g, "<br />"), cid, sid);
+                        that.send_message(kind, $func.convers(msg.replace(/  /g, "&nbsp;&nbsp;").replace(/\n/g, "<br />")), cid, sid);
                     }
 
                     // 清空消息框
-                    $(this).val("");
+                    textarea.val("");
+
+                    // 隐藏表情框
+                    $(".emotion_box.show").removeClass("show");
 
                     return false;
                 }
@@ -314,7 +368,7 @@ define([
                             chat_template.find("img").attr("src", chat.client.headimg);
                             chat_template.find(".nickname").text(chat.client.nickname);
                             chat_template.find(".last_time").text($func.dateFormat_wx(last_time).toLocaleString());
-                            chat_template.find(".last_content").text(chat.last_content);
+                            chat_template.find(".last_content").html(chat.last_content);
                             chat_template.prependTo(".comm_chat_list_template");
 
                             // 监听左侧会话列表
@@ -325,7 +379,7 @@ define([
                 } else { // 有此发送者记录
 
                     chat_line.find(".last_time").text($func.dateFormat_wx(rdate));
-                    chat_line.find(".last_content").text(msg);
+                    chat_line.find(".last_content").html(msg);
 
                     // 不在顶部，则移动至顶部
                     if (chat_line.parent().find("li").index(chat_line) !== 0)
@@ -422,6 +476,11 @@ define([
 
                 that.lastTime = date.getTime();
 
+            }
+
+            // 如果非系统消息，做内容的表情过滤
+            if (kind > 1) {
+                msg = $emotion.emotion_filter(msg);
             }
 
             // 装载内容

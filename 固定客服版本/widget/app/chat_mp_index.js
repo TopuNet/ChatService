@@ -12,7 +12,13 @@
     }
 */
 
-define(["lib/LayerShow"], function($LayerShow) {
+define([
+    "lib/LayerShow",
+    "modules/emotion"
+], function(
+    $LayerShow,
+    $emotion
+) {
     var chat_mp_index = {
 
         RECORD_COUNT: 10,
@@ -201,6 +207,11 @@ define(["lib/LayerShow"], function($LayerShow) {
                 case "c":
                     li = $("li.template.left").clone();
                     break;
+            }
+
+            // 如果非系统消息，做内容的表情过滤
+            if (r.sender.toLowerCase() != "o") {
+                r.content = $emotion.emotion_filter(r.content);
             }
 
             // 装载内容

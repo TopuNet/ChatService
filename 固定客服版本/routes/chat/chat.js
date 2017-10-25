@@ -9,6 +9,7 @@ var router = require("express").Router(),
     mongo = require("../../handle/mongodb"),
     chat_config = require("../../handle/chat_config"),
     getRecord_handler = require("../../handle/getRecords"),
+    emotion_handler = require("../../handle/emotion"),
     RECORD_COUNT = 10; // 每次读取历史记录的条数
 
 // 生成token
@@ -106,6 +107,8 @@ router.get("/", function(req, res) {
                 callback(err);
             } else {
 
+                console.log("\n\n", "chats", 110, "sort:\n", sort);
+
                 callback(null, chats, sort[0].list);
             }
         });
@@ -195,7 +198,27 @@ router.get("/chat", function(req, res) {
     // 客服头像
     // var s_headimg = "";
 
+    // 表情列表
+    var emotion;
+
     var db;
+
+    // 对emotion_list进行处理
+    var emotion_deal = function(_emotion, callback) {
+
+        var name_list = [];
+        emotion_handler.emotion_name_list.forEach(function(nl) {
+            name_list.push("\"" + nl.toString() + "\"");
+        });
+
+        emotion = {
+            device: "mobile",
+            name_list: name_list,
+            list: _emotion
+        };
+
+        callback(null);
+    };
 
     // 获取地址栏
     var getParameters = function(callback) {
@@ -495,6 +518,8 @@ router.get("/chat", function(req, res) {
 
     // async
     async.waterfall([
+        emotion_handler.get_emotionList_async, // 获取表情列表
+        emotion_deal, // 对emotion_list进行处理
         getParameters, // 获取地址栏
         mongo.connect_async, // 数据库连接
         get_chat, // 进行一系列验证并获取会话
@@ -517,6 +542,8 @@ router.get("/chat", function(req, res) {
             GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
             welcome_message: chat_config.welcome_message,
             client_title: chat_config.client_title,
+            emotion: emotion,
+            emotion_name_list: emotion.name_list,
             comm_talk_list_template: {
                 records: records
             }

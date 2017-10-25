@@ -287,6 +287,8 @@ exports.highlightKeywords_async = function(talk_list, deal_filter, callback) {
 
                     if (deal_filter) {
                         talk_list[talk_list_index].content = talk = talk.replace(regExp, function(m, $1) {
+
+                            // console.log("\n\n", "getRecords", 291, "$1:", $1, "\n regExp_str:", regExp_str);
                             return "<hl>" + $1 + "</hl>";
                         });
                     }

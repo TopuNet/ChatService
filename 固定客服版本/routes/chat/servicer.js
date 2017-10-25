@@ -12,6 +12,7 @@ var router = require("express").Router(),
     login_route = "/servicer/login", // 登录页
     db, // mongodb对象
     chat_config = require("../../handle/chat_config"),
+    emotion_handler = require("../../handle/emotion"),
     getRecord_handle = require("../../handle/getRecords");
 
 // 生成token并返回
@@ -80,6 +81,26 @@ var mw_check_login_status = function(req, res, next) {
 // 会话页
 router.get("/", mw_check_login_status, function(req, res) {
 
+    // 表情列表
+    var emotion;
+
+    // 对emotion_list进行处理
+    var emotion_deal = function(_emotion, callback) {
+
+        var name_list = [];
+        emotion_handler.emotion_name_list.forEach(function(nl) {
+            name_list.push("\"" + nl.toString() + "\"");
+        });
+
+        emotion = {
+            device: "pc",
+            name_list: name_list,
+            list: _emotion
+        };
+
+        callback(null);
+    };
+
     // 查询会话列表
     var getChats = function(callback) {
         var login_servicer = req.mw.login_servicer;
@@ -105,64 +126,10 @@ router.get("/", mw_check_login_status, function(req, res) {
         });
     };
 
-    // 【注释了】现在last_rdate存在库里了
-    // 补齐chats的last_rdate和last_content
-    /*
-        var infuseChats = function(login_servicer, chats, cid, callback) {
-
-            if (!chats.length)
-                callback(null, login_servicer, chats);
-
-            // 查询Chats的records
-            var getRecords = function(_callback) {
-                // console.log("\n\nservicer", 161, "cid:", cid, "\nlogin_servicer._id:", login_servicer._id);
-
-                var collection_records = db.collection("records");
-                collection_records.group(["cid", "sid"], { "sid": login_servicer._id.toString() }, { timestamp: 0 }, function(now, result) {
-                    if (now.timestamp > result.timestamp) {
-                        result.timestamp = now.timestamp;
-                        result.rdate = now.rdate;
-                        result.content = now.content;
-                    }
-                }, function(err, result) {
-                    // console.log("\n\nservicer", 170, "err:\n", err, "\nresult:\n", result);
-                    if (err)
-                        _callback(err);
-                    else
-                        _callback(null, result);
-                });
-            };
-
-            // 执行补齐chats
-            var infuse_deal = function(records, _callback) {
-                // console.log("\n\nservicer", 181, "records.length:\n", records.length);
-                chats.forEach(function(chat) {
-                    records.some(function(r) {
-                        // console.log("\n", "chat:\n", chat, "\nr:\n", r);
-                        if (chat.cid == r.cid && chat.sid == r.sid) {
-                            chat.last_time = r.rdate.toLocaleString();
-                            chat.last_content = r.content;
-                            // chats
-                            return true;
-                        }
-                    });
-                });
-
-                _callback(null);
-            };
-
-            // 执行async
-            async.waterfall([
-                getRecords,
-                infuse_deal
-            ], function() {
-                callback(null, login_servicer, chats);
-            });
-        };
-    */
-
     // 执行async
     async.waterfall([
+        emotion_handler.get_emotionList_async, // 获取表情列表
+        emotion_deal,
         getChats
         // infuseChats
     ], function(err, login_servicer, chats) {
@@ -176,7 +143,9 @@ router.get("/", mw_check_login_status, function(req, res) {
                 comm_chat_list_template_source: "servicer",
                 GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
                 servicer_pc_title: chat_config.servicer_pc_title,
-                comm_talk_list_template: []
+                comm_talk_list_template: [],
+                emotion: emotion,
+                emotion_name_list: emotion.name_list
             });
             // console.log("\n\nservicer", 214, "chats:\n", chats);
         }
