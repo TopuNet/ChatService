@@ -458,6 +458,7 @@ router.get("/chat", function(req, res) {
                     }
                 };
 
+                // 清除client新消息
                 var clear_client_record = function(chat, api_result_callback) {
                     if (chat) {
                         collection_chats.updateOne({
@@ -505,9 +506,10 @@ router.get("/chat", function(req, res) {
                 if (err) {
                     arr = [];
                 } else {
-                    // 把顺序调个个儿
+                    // 把顺序调个个儿，并替换表情
                     var i = arr.length - 1;
                     for (; i >= 0; i--) {
+                        arr[i].content = emotion_handler.message_filter_emotion(arr[i].content);
                         records.push(arr[i]);
                     }
                 }

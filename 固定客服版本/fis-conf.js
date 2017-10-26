@@ -12,7 +12,8 @@ fis.set('project.ignore', ['/fis-conf.js',
     '/**/.DS_Store',
     '/**/server.log',
     '/**/npm-debug.log',
-    '/launch/www.js'
+    '/launch/www.js',
+    'abc.txt'
 ]);
 fis.config.set('settings.optimizer.uglify-js', {
     mangle: false // 不混淆
@@ -61,6 +62,14 @@ fis.media('zqfdev').match('/handle/chat_config_zqf.js_bak', {
     release: false
 });
 
+fis.media('zqfdev').match('/inc/abc_zqfdev.txt_bak', {
+    release: '/inc/abc',
+    rExt: '.txt'
+});
+fis.media('zqfdev').match('/inc/abc_zqf.txt_bak', {
+    release: false
+});
+
 fis.media('zqfdev').match('/launch/www_zqfdev.js_bak', {
     release: '/launch/www',
     rExt: '.js'
@@ -86,6 +95,14 @@ fis.media('zqf').match('/handle/chat_config_zqf.js_bak', {
     rExt: '.js'
 });
 fis.media('zqf').match('/handle/chat_config_zqfdev.js_bak', {
+    release: false
+});
+
+fis.media('zqfdev').match('/inc/abc_zqf.txt_bak', {
+    release: '/inc/abc',
+    rExt: '.txt'
+});
+fis.media('zqfdev').match('/inc/abc_zqfdev.txt_bak', {
     release: false
 });
 

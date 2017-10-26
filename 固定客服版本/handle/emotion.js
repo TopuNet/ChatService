@@ -1,5 +1,5 @@
 /*
-	表情相关
+    表情相关
 */
 
 var emotion_handler = require("./emotion.js"),
@@ -129,17 +129,17 @@ exports.emotion_name_list = [
     "[匕首]", // 110
     "[足球]", // 111
     "[瓢虫]", // 112
-    "[便便]"  // 113
+    "[便便]" // 113
 ];
 
 var checkFile_count = 0;
 
 // 验证表情图片是否存在，并按优先顺序选择后缀
 /*
-	@emotion_index: 表情序号,
-	@emotion_count: 表情数量，异步成功数追平后执行callback_success
-	@callback_access: function(err, fp)  完成单个图片验证的回调。@err = 错误 || null。@fp = 图片路径
-	@callback_success: function() 完成所有异步后执行
+    @emotion_index: 表情序号,
+    @emotion_count: 表情数量，异步成功数追平后执行callback_success
+    @callback_access: function(err, fp)  完成单个图片验证的回调。@err = 错误 || null。@fp = 图片路径
+    @callback_success: function() 完成所有异步后执行
 */
 var checkFile = function(emotion_index, emotion_count, callback_access, callback_success) {
 
@@ -164,12 +164,12 @@ var checkFile = function(emotion_index, emotion_count, callback_access, callback
 
 };
 
-// 获得表情列表
+// 【async】获得表情列表
 /* 
-	@callback: function([{
-		imgPath: 表情图片路径,
-		name: 表情名称，如：[微笑]
-	}])
+    @callback: function([{
+        imgPath: 表情图片路径,
+        name: 表情名称，如：[微笑]
+    }])
 */
 exports.get_emotionList_async = function(callback) {
     var result = [];
@@ -197,10 +197,10 @@ exports.get_emotionList_async = function(callback) {
     })
 };
 
-// 通过表情名称换取表情图片路径。
+// 【async】通过表情名称换取表情图片路径。
 /*
- 	@name: [表情名称]，如：[微笑]
-	@callback: function(图片路径)
+    @name: [表情名称]，如：[微笑]
+    @callback: function(图片路径)
 */
 exports.get_emotionImg_async = function(name, callback) {
     var emotion_index = emotion_handler.emotion_name_list.indexOf(name);
@@ -213,4 +213,50 @@ exports.get_emotionImg_async = function(name, callback) {
             callback(err, fp);
         })
     }
+};
+
+
+
+// 【同步】消息过滤表情消息为图片
+/*
+    @msg: 消息
+*/
+exports.message_filter_emotion = function(msg) {
+
+    // 基础正则
+    var regExp_base_str = "(\\[.+?\\])";
+
+    // 扩展正则，出现在基础正则前面
+    var regExp_ext_str = "";
+
+    // 正则条件对象
+    var regExp = new RegExp("()" + regExp_base_str);
+
+    var result,
+        name_index;
+    var replace_callback = function(m, $1) {
+        return (function() {
+            return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+        })();
+    };
+    while (true) {
+        result = regExp.exec(msg);
+
+        // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+        if (!result)
+            break;
+
+        name_index = emotion_handler.emotion_name_list.indexOf(result[2]);
+
+        // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+        if (name_index == -1) {
+            regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
+            regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+        } else {
+            msg = msg.replace(regExp, replace_callback);
+        }
+    }
+
+    return msg;
 };
