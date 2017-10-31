@@ -3599,6 +3599,52 @@ define('modules/emotion',["lib/RotatingBanner"], function($rb) {
         // 更换表情，返回msg
         emotion_filter: function(msg) {
 
+            // 正则条件对象
+            var regExp = new RegExp(/((?:\[)*)(\[.+?\])/g);
+
+            var name_index;
+
+            msg = msg.replace(regExp, function(m, $1, $2) {
+
+                name_index = comm_emotion.emotion_name_list.indexOf($2);
+
+                if (name_index == -1)
+                    return m;
+                else
+                    return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+            });
+
+            /*
+            while (true) {
+                result = regExp.exec(msg);
+
+                // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+                if (!result)
+                    break;
+
+
+                name_index = comm_emotion.emotion_name_list.indexOf(result[1]);
+
+                console.log(name_index);
+
+                // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+                if (name_index == -1) {
+                    // regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
+                    // regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+                } else {
+                    msg = msg.replace(regExp, replace_callback);
+                    console.log(msg);
+                    break;
+                }
+            }
+*/
+            return msg;
+        },
+
+        // 备份
+        emotion_filter_1: function(msg) {
+
             // 基础正则
             var regExp_base_str = "(\\[.+?\\])";
 

@@ -223,40 +223,56 @@ exports.get_emotionImg_async = function(name, callback) {
 */
 exports.message_filter_emotion = function(msg) {
 
-    // 基础正则
-    var regExp_base_str = "(\\[.+?\\])";
-
-    // 扩展正则，出现在基础正则前面
-    var regExp_ext_str = "";
-
     // 正则条件对象
-    var regExp = new RegExp("()" + regExp_base_str);
+    var regExp = new RegExp(/((?:\[)*)(\[.+?\])/g);
 
-    var result,
-        name_index;
-    var replace_callback = function(m, $1) {
-        return (function() {
+    var name_index;
+
+    msg = msg.replace(regExp, function(m, $1, $2) {
+
+        name_index = emotion_handler.emotion_name_list.indexOf($2);
+
+        if (name_index == -1)
+            return m;
+        else
             return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
-        })();
-    };
-    while (true) {
-        result = regExp.exec(msg);
+    });
 
-        // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
 
-        if (!result)
-            break;
+    // // 基础正则
+    // var regExp_base_str = "(\\[.+?\\])";
 
-        name_index = emotion_handler.emotion_name_list.indexOf(result[2]);
+    // // 扩展正则，出现在基础正则前面
+    // var regExp_ext_str = "";
 
-        // console.log("\n\n", "socketio", 265, "name_index:", name_index);
-        if (name_index == -1) {
-            regExp_ext_str += "\\" + result[2].replace("]", "\\]") + ".*?";
-            regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
-        } else {
-            msg = msg.replace(regExp, replace_callback);
-        }
-    }
+    // // 正则条件对象
+    // var regExp = new RegExp("()" + regExp_base_str);
+
+    // var result,
+    //     name_index;
+    // var replace_callback = function(m, $1) {
+    //     return (function() {
+    //         return $1 + "<span class=\"emotion\" style=\"background-image:url('/inc/emotion/Expression_" + name_index + ".png');\"></span>";
+    //     })();
+    // };
+    // while (true) {
+    //     result = regExp.exec(msg);
+
+    //     // console.log("\n\n", "socketio", 257, "result:", result, "\n regExp_ext_str:" + regExp_ext_str);
+
+    //     if (!result)
+    //         break;
+
+    //     name_index = emotion_handler.emotion_name_list.indexOf(result[2]);
+
+    //     // console.log("\n\n", "socketio", 265, "name_index:", name_index);
+    //     if (name_index == -1) {
+    //         regExp_ext_str += result[2].replace(/\[/g, "\\[").replace(/\]/g, "\\]") + ".*?";
+    //         regExp = new RegExp("(" + regExp_ext_str + ")" + regExp_base_str);
+    //     } else {
+    //         msg = msg.replace(regExp, replace_callback);
+    //     }
+    // }
 
     return msg;
 };
