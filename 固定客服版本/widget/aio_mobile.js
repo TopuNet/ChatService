@@ -3864,11 +3864,11 @@ define('app/chat',[
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.href = "http://wx.zhongqifu.com.cn/f/Service_Classification.aspx?source=1";
+                    location.href = "/?cid=" + Base_meta.cid;
                 });
             } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
-                    location.href = "list";
+                    location.href = "/?cid=" + Base_meta.cid;
                 });
             } else {
 

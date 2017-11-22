@@ -1,0 +1,67 @@
+<div class="mp_servicer_form">
+    <form onsubmit="return false;">
+        <ul class="form_line_ul" _id="<%=servicer._id%>">
+            <li>
+                <span>账&nbsp;&nbsp;号：</span>
+                <div class="input_box">
+                    <input type="text" class="sname" value="<%-servicer.sname%>">
+                </div>
+            </li>
+            <li>
+                <span>昵&nbsp;&nbsp;称：</span>
+                <div class="input_box">
+                    <input type="text" class="nickname" value="<%-servicer.nickname%>">
+                </div>
+            </li>
+            <li>
+                <span>密&nbsp;&nbsp;码：</span>
+                <div class="input_box">
+                    <input type="password" class="passwd" placeholder="空为不修改">
+                </div>
+            </li>
+            <li class="headimg_li">
+                <span>头&nbsp;&nbsp;像：</span>
+                <ul class="headimg_ul">
+                    <% // 首列li加class="first_cell"；最后要用空li补齐列数 %>
+                        <% if(files.length){ %>
+                            <% var _index=0; %>
+                                <% files.forEach(function(f,index){ %>
+                                    <% if(/.*\.(png|jpg|gif|bmp)/ig.exec(f)){ var fp=dirPath + "/" + f; %>
+                                        <li class="<% if(_index%3===0){ %>first_cell<% } %><% if("." + servicer.headimg==fp){ %> selected<% } %> ">
+                                            <img src="<%=fp%>">
+                                            <span></span>
+                                        </li>
+                                        <% _index++; %>
+                                            <% }});} %>
+                                                <% for(var i=(_index-1)%3;i<2;i++){ %>
+                                                    <li></li>
+                                                    <% } %>
+                </ul>
+            </li>
+            <li class="sort_li">
+                <span>分&nbsp;&nbsp;类：</span>
+                <div class="input_box">
+                    <label>
+                        <input type="checkbox" class="checkall">全选</label>
+                </div>
+                <ul class="sort_ul form_sort_ul">
+                    <% if(sort.length){ %>
+                        <% var s_old=0; %>
+                            <% sort.forEach(function(s,index){ %>
+                                <% if(s_old!==s.Of_Scid){ %>
+                                    <li class="sort_a">
+                                        <%=s.Of_Ctitle%>
+                                    </li>
+                                    <% } %>
+                                        <% s_old=s.Of_Scid; %>
+                                            <% // 选中状态 的 高亮样式 为 checked %>
+                                                <li class="sort_b<% if(checkHave(servicer.sort,s.Scid.toString())){ %> checked<% } %>" Scid="<%=s.Scid%>">
+                                                    <%=s.Ctitle%>
+                                                </li>
+                                                <% }); %>
+                                                    <% } %>
+                </ul>
+            </li>
+        </ul>
+    </form>
+</div>

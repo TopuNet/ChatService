@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>
+        <%=servicer_pc_title%>
+    </title>
+    <% include head.html %>
+        <link href="http://chat.taohuantang.com.cn/static/css/style_b38f3c5.css" rel="stylesheet" type="text/css" />
+        <link href="http://chat.taohuantang.com.cn/inc/weui.min.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class="chat_servicer">
+    <audio id="newMessageAudio" src="<%=GLOBAL_SOCKET_URL%>/inc/newMessage.mp3"></audio>
+    <div class="wrapper">
+        <div class="wrapper_cell wrapper_left">
+            <div class="cell_title">会话</div>
+            <% include comm_chat_list_template.html %>
+        </div>
+        <div class="wrapper_cell wrapper_right">
+            <div class="cell_title">
+                <div class="buttons">
+                    <span class="mute"></span>
+                </div>
+                <span class="quit">退出</span>
+            </div>
+            <p class="loading">加载中，请稍候...</p>
+            <ul class="talk_list">
+                <% include  comm_talk_list_template.html %>
+            </ul>
+            <div class="fixed_space"></div>
+            <div class="content_fixed hidden">
+                <div class="tool_icon_left emotion"></div>
+                <div class="tool_icon_right sendKey" kind="1">Enter发送</div>
+                <textarea></textarea>
+                <% include comm_emotion.html %>
+            </div>
+        </div>
+        <% include ../weui.html %>
+            <script type="text/javascript">
+            var Base_meta = {
+                sid: "<%=servicer._id.toString()%>",
+                headimg: "<%=servicer.headimg%>",
+                GLOBAL_SOCKET_URL: "<%=GLOBAL_SOCKET_URL%>"
+            };
+            </script>
+            <script data-main="http://chat.taohuantang.com.cn/static/widget/aio_3cd12ae.js" src="http://chat.taohuantang.com.cn/inc/require.js" id="script_page" page="chat_servicer"></script>
+</body>
+
+</html>
