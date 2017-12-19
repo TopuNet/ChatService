@@ -204,7 +204,7 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
                 j = 0,
                 len = Json_Select.length;
 
-            console.log("\n\n chat_handle",206,"data:\n",data);
+            // console.log("\n\n chat_handle",206,"data:\n",data);
 
             for (; i < len; i++) {
                 if (cache_result[i] === null || cache_result[i] === "" || cache_result[i] === undefined) {
