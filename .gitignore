@@ -3,10 +3,15 @@ node_modules
 ChatRecord
 zqf
 zqfdev
+tht
 npm-debug.log
 server.log
 uploadFile
 chat_config_zqf.js_bak
+chat_config_zqfdev.js_bak
+chat_config_tht.js_bak
 abc.txt
 abc_zqf.txt_bak
 abc_zqfdev.txt_bak
+abc_tht.txt_bak
+
