@@ -8,6 +8,7 @@ fis.set('project.ignore', ['/fis-conf.js',
     '/node_modules/**',
     '/app.js',
     '/handle/chat_config.js',
+    '/routes/chat.js',
     // '/handle/*.js_bak',
     '/**/.DS_Store',
     '/**/server.log',
@@ -61,6 +62,11 @@ fis.media('zqfdev').match('/handle/chat_config_zqfdev.js_bak', {
     rExt: '.js'
 });
 
+fis.media('zqfdev').match('/routes/chat_zqf.js_bak', {
+    release: '/routes/chat',
+    rExt: '.js'
+});
+
 fis.media('zqfdev').match('/inc/abc_zqfdev.txt_bak', {
     release: '/inc/abc',
     rExt: '.txt'
@@ -95,6 +101,11 @@ fis.media('zqfdev').match('{/css/**,/images/**,/widget/**}', {
 // zqf start
 fis.media('zqf').match('/handle/chat_config_zqf.js_bak', {
     release: '/handle/chat_config',
+    rExt: '.js'
+});
+
+fis.media('zqfdev').match('/routes/chat_zqf.js_bak', {
+    release: '/routes/chat',
     rExt: '.js'
 });
 
@@ -140,6 +151,11 @@ fis.media('zqf').match('/css/**.css', {
 // tht start
 fis.media('tht').match('/handle/chat_config_tht.js_bak', {
     release: '/handle/chat_config',
+    rExt: '.js'
+});
+
+fis.media('zqfdev').match('/routes/chat_tht.js_bak', {
+    release: '/routes/chat',
     rExt: '.js'
 });
 
