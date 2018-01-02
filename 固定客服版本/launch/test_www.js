@@ -14,7 +14,8 @@ var http = require('http');
  */
 
 var port = normalizePort(process.env.PORT || '4545');
-console.log("Listening On Port:" + port);
+process.stdout.write('Listening on Port: '+ port);
+// process.stdout.write("abcd");
 //var port = normalizePort(process.env.PORT);
 app.set('port', port);
 

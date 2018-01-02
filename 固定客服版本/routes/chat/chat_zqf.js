@@ -68,13 +68,9 @@ router.get("/", function(req, res) {
     // 地址栏
     var cid; // 客户id
 
-    var from; // 来源 1-微信 2-APP
-
     // 获得参数
     var getParameters = function(callback) {
         cid = func.filterNoNum(req.query.cid);
-
-        from = func.filterNoNum(req.query.from);
 
         callback(null);
     };
@@ -104,7 +100,7 @@ router.get("/", function(req, res) {
     // 获得分类列表
     var getSorts = function(chats, callback) {
 
-        chat_config.getSort(from, req.query, function(err, sort) {
+        chat_config.getSort(req.query, function(err, sort) {
 
             if (err) {
                 console.log("\n\nchat", 109, "err:\n", err);
@@ -128,11 +124,17 @@ router.get("/", function(req, res) {
 
                 chat.sort_first = sort[0];
 
+                // console.log("\n\n chat页路由",127,"sort:\n");
+                // console.dir(sort);
+
+                // console.log("\n sorts:\n");
+                // console.dir(sorts);
+
                 // 获得对应的分类名称
                 sort_str = "";
                 sort.forEach(function(s) {
                     sorts.some(function(ss) {
-                        if (ss.Ssid == s) {
+                        if (ss.Scid == s) {
                             if (sort_str !== "")
                                 sort_str += ",";
                             sort_str += ss.Ctitle;
@@ -160,7 +162,6 @@ router.get("/", function(req, res) {
         var render_para = {
             err: err,
             cid: cid,
-            from: from,
             comm_chat_list_template: chats,
             comm_chat_list_template_source: "chat_list",
             GLOBAL_SOCKET_URL: chat_config.GLOBAL_SOCKET_URL,
@@ -187,10 +188,6 @@ router.get("/chat", function(req, res) {
 
     // [地址栏] 咨询分类
     var sort = -1;
-
-    // [地址栏] 来源
-    // 淘换堂：1-微信 2-APP
-    var from = 0;
 
     // [地址栏] 客服id
     // var sid = "";
@@ -244,9 +241,6 @@ router.get("/chat", function(req, res) {
 
         sort = req.query.sort || -1;
 
-        from = req.query.from || 0;
-        from = parseFloat(from) || 0;
-
         callback(null);
     };
 
@@ -279,8 +273,6 @@ router.get("/chat", function(req, res) {
                 var find_chat = function(api_result_callback) {
                     // console.log("\n\nchat", 139, "cid:", cid, "\nbid:", bid, "\nsort", sort);
                     var find_opt = { "cid": cid, "bid": bid, "sort": eval("/<" + sort + ">/ig") };
-                    if (from !== 0)
-                        find_opt.from = from;
                     collection_chats.find(find_opt).next(function(err, chat) {
 
                         // console.log("\n\nchat", 142, "chat:\n", chat);
@@ -620,9 +612,7 @@ router.post("/update_noRead_record_client", function(req) {
 // 会话列表页 获得分类视图
 router.post("/chat/getSort", function(req, res) {
 
-    var from = func.filterNoNum(req.body.from);
-
-    chat_config.getSort(from, req.query, function(err, sort) {
+    chat_config.getSort(req.query, function(err, sort) {
 
         if (err) {
             console.log("\n\nchat", 586, "err:\n", err);

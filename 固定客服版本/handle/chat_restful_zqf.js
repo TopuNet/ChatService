@@ -1,33 +1,14 @@
 /*
     高京
     2017-07-08
-    chat_config
-    配置内容，不同项目有不同的绑定值
+    chat_restful
+    接口访问，不同项目有不同的绑定值
 */
 
 var config = require("./config"),
     func = require("./functions"),
-    chat_config = require("./chat_config");
-
-// socket连接地址
-// exports.GLOBAL_SOCKET_URL = "http://47.94.193.240:4545";
-exports.GLOBAL_SOCKET_URL = "http://127.0.0.1:4545";
-
-// 客户端默认欢迎语
-exports.welcome_message = "您好!欢迎来到淘换堂！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。";
-
-// mongodb连接地址
-exports.mongoUrl = "mongodb://localhost:27017/ChatServicer_RegularServicer";
-
-// 客户端title
-exports.client_title = "淘换堂 - 我的顾问";
-
-// 客服pc端title
-exports.servicer_pc_title = "淘换堂 - 顾问";
-
-exports.ImageDomain = "http://mp.taohuantang.com.cn"; //数据库中读取的图片的域名前缀
-exports.host = "mp.taohuantang.com.cn";
-exports.port = 80; //端口号
+    chat_config = require("./chat_config"),
+    chat_restful = require("./chat_restful");
 
 // 根据cid拉取会员信息-姓名(昵称)、头像、性别
 // @query: req.query
@@ -47,18 +28,16 @@ exports.getClientInfo = function(cid, query, callback) {
         "para": {
             "params": {
                 "d_Alive": "1",
-                "d_IsUpdateToken": "0",
                 "d_Mid": cid.toString(),
-                "d_Token": "",
                 "s_Total_parameter": "Mid,Nickname,Head_img,Mname,Sex"
             }
         }
     }];
 
-    chat_config.getDataFromRestFul(api_callback, Json_Select, query);
+    chat_restful.getDataFromRestFul(api_callback, Json_Select, query);
 };
 
-// 拉取宝贝分类
+// 拉取服务分类
 // @query: req.query
 exports.getSort = function(query, callback) {
 
@@ -72,17 +51,19 @@ exports.getSort = function(query, callback) {
     };
 
     var Json_Select = [{
-        "type": "Classification",
+        "type": "Service_Classification",
         "act": "Select_List",
         "para": {
             "params": {
-                "s_Alive":"1",
-                "s_Cid":"",
-                "s_Keywords":"",
-                "s_Kind":"1",
-                "s_Order":"Stem_from,Layer,Cid",
-                "s_Stem_from":"",
-                "s_Total_parameter": "Cid,Ctitle,Stem_from,Layer"
+                "s_Alive": "1",
+                "s_Hot": "0",
+                "s_Keywords": "",
+                "s_Of_Scid": "",
+                "s_Order": "Of_Scid,Layer,Scid",
+                "s_Recommend": "0",
+                "s_Scid": "",
+                "s_Select_level_two": "1",
+                "s_Total_parameter": "Scid,Of_Scid,Of_Ctitle,Ctitle,Layer"
             },
             "pages": {
                 "p_c": "",
@@ -103,7 +84,7 @@ exports.getSort = function(query, callback) {
         }
     }];
 
-    chat_config.getDataFromRestFul(api_callback, Json_Select, query);
+    chat_restful.getDataFromRestFul(api_callback, Json_Select, query);
 };
 
 
@@ -200,11 +181,13 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
 
         func.Request(opt, function(data) {
 
+            // console.log("\n\n chat_config",202,"opt:\n");
+            // console.dir(opt.PostData.params[0]);
+            // console.log("\n",data);
+
             var i = 0,
                 j = 0,
                 len = Json_Select.length;
-
-            // console.log("\n\n chat_handle",206,"data:\n",data);
 
             for (; i < len; i++) {
                 if (cache_result[i] === null || cache_result[i] === "" || cache_result[i] === undefined) {

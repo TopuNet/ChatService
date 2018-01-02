@@ -2,12 +2,24 @@
   "name": "node",
   "version": "0.0.0",
   "private": true,
+  "config": {
+    "env": "env",
+    "proj": "proj"
+  },
   "scripts": {
-    "start": "node ./launch/www.js"
+    "start": "echo \\'test:zqf[:s]\\' 本地运行 中企服版本 && echo \\'test:tht[:s]\\' 本地运行 淘换堂版本 && echo \\'pub:zqf\\' 发布 中企服 && echo \\'pub:zqfdev\\' 发布 中企服dev && echo \\'pub:tht\\' 发布 淘换堂 && echo ''",
+    "test:zqf": "node ./package.js --env test --project zqfdev --supervisor false",
+    "test:tht": "node ./package.js --env test --project tht --supervisor false",
+    "test:zqf:s": "node ./package.js --env test --project zqfdev",
+    "test:tht:s": "node ./package.js --env test --project tht",
+    "pub:zqf": "node ./package.js --env pub --project zqf --start false",
+    "pub:zqfdev": "node ./package.js --env pub --project zqfdev --start false",
+    "pub:tht": "node ./package.js --env pub --project tht --start false"
   },
   "dependencies": {
     "async": "^1.5.0",
     "body-parser": "~1.13.2",
+    "commander": "^2.12.2",
     "cookie-parser": "~1.3.5",
     "dateformat": "^1.0.11",
     "debug": "~2.2.0",
@@ -22,7 +34,7 @@
     "multer": "^1.0.5",
     "node-uuid": "^1.4.3",
     "nodemailer": "^1.10.0",
-    "nodemailer-smtp-transport": "^1.0.4",
+    "nodemailer-smtp-transport": "^1.0.cp -R node_modules ../zqfdev/node_modules",
     "nodemailer-wellknown": "^0.1.7",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",

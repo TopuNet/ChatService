@@ -107,7 +107,7 @@ router.get("/", function(req, res) {
                 callback(err);
             } else {
 
-                console.log("\n\n", "chats", 110, "sort:\n", sort);
+                // console.log("\n\n", "chats", 110, "sort:\n", sort);
 
                 callback(null, chats, sort[0].list);
             }
@@ -128,7 +128,7 @@ router.get("/", function(req, res) {
                 sort_str = "";
                 sort.forEach(function(s) {
                     sorts.some(function(ss) {
-                        if (ss.Scid == s) {
+                        if (ss.Cid == s) {
                             if (sort_str !== "")
                                 sort_str += ",";
                             sort_str += ss.Ctitle;
@@ -266,7 +266,8 @@ router.get("/chat", function(req, res) {
                 // 根据cid+bid+sort查找会话，没有则创建
                 var find_chat = function(api_result_callback) {
                     // console.log("\n\nchat", 139, "cid:", cid, "\nbid:", bid, "\nsort", sort);
-                    collection_chats.find({ "cid": cid, "bid": bid, "sort": eval("/<" + sort + ">/ig") }).next(function(err, chat) {
+                    var find_opt = { "cid": cid, "bid": bid, "sort": eval("/<" + sort + ">/ig") };
+                    collection_chats.find(find_opt).next(function(err, chat) {
 
                         // console.log("\n\nchat", 142, "chat:\n", chat);
 
