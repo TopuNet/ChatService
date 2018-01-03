@@ -18,7 +18,7 @@
                 <div class="fixed_space"></div>
         </div>
         <div class="footer_button">
-            <div class="back li_click" target="_self" url="http://wx.zhongqifu.com.cn"></div>
+            <div class="back"></div>
             <div class="mute"></div>
             <input type="button" value="咨询其他服务" class="weui-btn weui-btn_mini weui-btn_primary">
         </div>
@@ -27,6 +27,8 @@
                 <script src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
                 <script>
                 var Base_meta = {
+                    "from": "<%=query.from%>",
+                    <% // 淘换堂 %>
                     "err": "<%=err%>",
                     "cid": "<%=cid%>",
                     "GLOBAL_SOCKET_URL": "<%=GLOBAL_SOCKET_URL%>"
@@ -47,13 +49,11 @@
                     audio_newMessage.play();
                 });
 
-                // document.addEventListener("WeixinJSBridgeReady", function() {
-
-                //     var audio_newMessage = document.getElementById("newMessage");
-                //     audio_newMessage.muted = true;
-                //     audio_newMessage.play();
-
-                // }, false);
+                var returnToApp = function() {
+                    var dom_script = document.createElement('script');
+                    dom_script.innerHTML = "(function(){ window.server.closeServer(); })();";
+                    document.body.appendChild(dom_script);
+                };
                 </script>
                 <script data-main="/widget/main_mobile.js" src="/inc/require.js" id="script_page" page="chat_list"></script>
 </body>

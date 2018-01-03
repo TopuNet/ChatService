@@ -174,11 +174,11 @@ define([
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.href = "/?cid=" + Base_meta.cid;
+                    location.href = "/?cid=" + Base_meta.cid + "&from=" + Base_meta.from;
                 });
             } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
-                    location.href = "/?cid=" + Base_meta.cid;
+                    location.href = "/?cid=" + Base_meta.cid + "&from=" + Base_meta.from;
                 });
             } else {
 
@@ -454,7 +454,9 @@ define([
         // 监听返回按钮
         back_button_Listener: function() {
             $(".footer_button .back").unbind().on("click", function() {
-                location.href = "/?cid=" + Base_meta.cid.toString();
+
+                // from 淘换堂专用
+                location.href = "/?cid=" + Base_meta.cid.toString() + "&from=" + Base_meta.from.toString();
             });
         },
 

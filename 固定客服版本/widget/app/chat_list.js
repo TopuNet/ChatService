@@ -36,6 +36,9 @@ define([
             // 咨询其他服务按钮的监听
             that.add_button_Listener.apply(that);
 
+            // 返回按钮的监听
+            that.return_button_Listener.apply(that);
+
             // 静音按钮的监听
             that.mute_button_Listener.apply(that);
         },
@@ -140,9 +143,28 @@ define([
             });
         },
 
+        // 返回按钮的监听
+        return_button_Listener: function() {
+            $(".footer_button .back").unbind("click").on("click", function() {
+                switch (location.host) {
+                    case "chat.zhongqifu.com.cn":
+                        location.href = "http://wx.zhongqifu.com.cn";
+                        break;
+                    case "chat.taohuantang.com.cn":
+                        if (Base_meta.from.toString() == "1")
+                            location.href = "http://wechat.taohuantang.com.cn";
+                        else
+                            returnToApp();
+                        break;
+                    default:
+                        alert("本地无处可跳");
+                };
+            });
+        },
+
         // 静音按钮的监听
         mute_button_Listener: function() {
-            
+
             $footer_button_mute.init.apply($footer_button_mute);
         },
 
@@ -170,6 +192,9 @@ define([
                 $.ajax({
                     url: "/chat/getSort",
                     type: "post",
+                    data: {
+                        from: Base_meta.from || "1" // 淘换堂
+                    },
                     success: function(result) {
                         that.sortHtml = result;
                         if (callback)
@@ -233,7 +258,7 @@ define([
             // 监听
             sort_obj.unbind().on("click", function(e) {
 
-                location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid");
+                location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid") + "&from=" + Base_meta.from.toString();
 
                 $(this).addClass("isChecked").unbind();
             });
