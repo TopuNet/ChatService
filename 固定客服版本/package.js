@@ -59,6 +59,23 @@ file_templates.forEach(function(f) {
     file_temp.push(file_des);
 });
 
+// 打包js
+var r = function() {
+    var r_index = 0,
+        r_count = 2;
+
+    var check_r_count=function(){
+        if(++r_index>=r_count)
+            doFis();
+    };
+    shell.exec("node widget/r.js -o widget/build.js", function() {
+        check_r_count();
+    });
+    shell.exec("node widget/r.js -o widget/build_mobile.js", function() {
+        check_r_count();
+    });
+}();
+
 // 执行fis操作
 var doFis = function() {
 
@@ -91,8 +108,9 @@ var doFis = function() {
                 run(fis_releaseDir);
         });
     });
-}();
+};
 
+// 运行
 var run = function(fis_releaseDir) {
 
     clearInterval(interval_print);

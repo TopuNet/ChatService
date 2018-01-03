@@ -55,7 +55,7 @@
                                     <% } %>
                                         <% stem_from=s.Stem_from; %>
                                             <% // 选中状态 的 高亮样式 为 checked %>
-                                                <li class="sort_b<% if(checkHave(servicer.sort,s.Cid.toString())){ %> checked<% } %>" Cid="<%=s.Cid%>">
+                                                <li class="sort_b<% if(checkHave(servicer.sort,s.Cid.toString())){ %> checked<% } %>" Scid="<%=s.Cid%>">
                                                     <%=s.Ctitle%>
                                                 </li>
                                                 <% }); %>

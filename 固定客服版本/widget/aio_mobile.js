@@ -2747,6 +2747,9 @@ define('app/chat_list',[
             // 咨询其他服务按钮的监听
             that.add_button_Listener.apply(that);
 
+            // 返回按钮的监听
+            that.return_button_Listener.apply(that);
+
             // 静音按钮的监听
             that.mute_button_Listener.apply(that);
         },
@@ -2851,9 +2854,28 @@ define('app/chat_list',[
             });
         },
 
+        // 返回按钮的监听
+        return_button_Listener: function() {
+            $(".footer_button .back").unbind("click").on("click", function() {
+                switch (location.host) {
+                    case "chat.zhongqifu.com.cn":
+                        location.href = "http://wx.zhongqifu.com.cn";
+                        break;
+                    case "chat.taohuantang.com.cn":
+                        if (Base_meta.from.toString() == "1")
+                            location.href = "http://wechat.taohuantang.com.cn";
+                        else
+                            returnToApp();
+                        break;
+                    default:
+                        alert("本地无处可跳");
+                };
+            });
+        },
+
         // 静音按钮的监听
         mute_button_Listener: function() {
-            
+
             $footer_button_mute.init.apply($footer_button_mute);
         },
 
@@ -2881,6 +2903,9 @@ define('app/chat_list',[
                 $.ajax({
                     url: "/chat/getSort",
                     type: "post",
+                    data: {
+                        from: Base_meta.from || "1" // 淘换堂
+                    },
                     success: function(result) {
                         that.sortHtml = result;
                         if (callback)
@@ -2944,7 +2969,7 @@ define('app/chat_list',[
             // 监听
             sort_obj.unbind().on("click", function(e) {
 
-                location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid");
+                location.href = "/chat?cid=" + Base_meta.cid + "&bid=-1&sort=" + $(this).attr("scid") + "&from=" + Base_meta.from.toString();
 
                 $(this).addClass("isChecked").unbind();
             });
@@ -3864,11 +3889,11 @@ define('app/chat',[
             // 无客服可提供服务
             if (Base_meta.err == "noServicers") {
                 that.show_error_dialog("Sorry~暂时没有顾问可提供服务", function() {
-                    location.href = "/?cid=" + Base_meta.cid;
+                    location.href = "/?cid=" + Base_meta.cid + "&from=" + Base_meta.from;
                 });
             } else if (Base_meta.err == "sidError") { // 基本不会了。
                 that.show_error_dialog("此会话已结束", function() {
-                    location.href = "/?cid=" + Base_meta.cid;
+                    location.href = "/?cid=" + Base_meta.cid + "&from=" + Base_meta.from;
                 });
             } else {
 
@@ -4144,7 +4169,9 @@ define('app/chat',[
         // 监听返回按钮
         back_button_Listener: function() {
             $(".footer_button .back").unbind().on("click", function() {
-                location.href = "/?cid=" + Base_meta.cid.toString();
+
+                // from 淘换堂专用
+                location.href = "/?cid=" + Base_meta.cid.toString() + "&from=" + Base_meta.from.toString();
             });
         },
 

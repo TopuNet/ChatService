@@ -41,7 +41,11 @@ exports.getClientInfo = function(cid, query, callback) {
 
 // 拉取宝贝分类
 // @query: req.query
-exports.getSort = function( query, callback) {
+exports.getSort = function(query, callback) {
+
+    var stem_from = func.filterNoNum(query.from || "-1");
+    if (stem_from === "-1")
+        stem_from = "";
 
     var api_callback = function(err, result) {
         if (err) {
@@ -60,9 +64,9 @@ exports.getSort = function( query, callback) {
                 "s_Alive": "1",
                 "s_Cid": "",
                 "s_Keywords": "",
-                "s_Kind": "1",
+                "s_Kind": "1", // 1-宝贝 2-论坛
                 "s_Order": "Stem_from,Layer,Cid",
-                "s_Stem_from": "",
+                "s_Stem_from": stem_from.toString(), // 1-微信 2-APP
                 "s_Total_parameter": "Cid,Ctitle,Stem_from,Layer"
             },
             "pages": {
@@ -185,7 +189,7 @@ exports.getDataFromRestFul = function(callback, Json_Select, query, validate_k, 
                 j = 0,
                 len = Json_Select.length;
 
-            // console.log("\n\n chat_handle",206,"data:\n",data);
+            // console.log("\n\n chat_restful_tht", 190, "data:\n", data);
 
             for (; i < len; i++) {
                 if (cache_result[i] === null || cache_result[i] === "" || cache_result[i] === undefined) {

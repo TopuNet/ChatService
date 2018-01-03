@@ -1,6 +1,7 @@
 <ul class="comm_chat_list_template">
     <% if(comm_chat_list_template.length){ %>
         <% comm_chat_list_template.forEach(function(chat,index){ %>
+            <% if(comm_chat_list_template_source=="chat_list"&&chat.sort_str==="") return true; %>
             <% if(comm_chat_list_template_source=="servicer"){ %>
                 <li class="chat_line<% if(chat.has_noRead_record_servicer){ %> new<% } %>" cid="<%=chat.cid%>">
                     <% // class可选：now-当前对话；new-有新消息 %>
@@ -13,7 +14,7 @@
                         </div>
                 </li>
                 <% } else if(comm_chat_list_template_source=="chat_list"){ %>
-                    <li class="chat_line sid_<%=chat.sid%> li_touchstart<% if(chat.has_noRead_record_client){ %> new<% } %>" sort="<%=chat.sort%>" sid="<%=chat.sid%>" target="_self" url="chat?cid=<%=chat.cid%>&bid=-1&sort=<%=chat.sort_first%>">
+                    <li class="chat_line sid_<%=chat.sid%> li_touchstart<% if(chat.has_noRead_record_client){ %> new<% } %>" sort="<%=chat.sort%>" sid="<%=chat.sid%>" target="_self" url="chat?cid=<%=chat.cid%>&bid=-1&sort=<%=chat.sort_first%>&<%=transParameters(query,'cid|bid|sort')%>">
                         <% // class可选：new-有新消息 %>
                             <img src="<%=chat.servicer.headimg%>" />
                             <div class="new_flag"></div>

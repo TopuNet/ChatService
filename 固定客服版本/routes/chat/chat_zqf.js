@@ -160,6 +160,7 @@ router.get("/", function(req, res) {
         db.close();
 
         var render_para = {
+            query: req.query,
             err: err,
             cid: cid,
             comm_chat_list_template: chats,
@@ -540,6 +541,7 @@ router.get("/chat", function(req, res) {
         // console.log("\n\nchat", 318, "chat\n", chat);
 
         var render_para = {
+            query: req.query,
             kind: kind,
             err: err,
             cid: cid,

@@ -154,6 +154,7 @@ router.get("/", function(req, res) {
         db.close();
 
         var render_para = {
+            query: req.query,
             err: err,
             cid: cid,
             comm_chat_list_template: chats,
@@ -534,6 +535,7 @@ router.get("/chat", function(req, res) {
         // console.log("\n\nchat", 318, "chat\n", chat);
 
         var render_para = {
+            query: req.query,
             kind: kind,
             err: err,
             cid: cid,
@@ -606,7 +608,7 @@ router.post("/update_noRead_record_client", function(req) {
 // 会话列表页 获得分类视图
 router.post("/chat/getSort", function(req, res) {
 
-    chat_config.getSort(req.query, function(err, sort) {
+    chat_config.getSort(req.body, function(err, sort) {
 
         if (err) {
             console.log("\n\nchat", 586, "err:\n", err);
