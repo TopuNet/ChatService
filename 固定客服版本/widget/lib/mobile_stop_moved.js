@@ -80,7 +80,6 @@ var mobile_stop_moved = {
                 }
 
                 setTimeout(function() {
-                    // console.log(window_size_px.width, window_size_px.height, screen.height);
                     orientation = window.orientation;
                     // console.log(orientation == orientation_old);
                     // console.log(window_size_px.height);

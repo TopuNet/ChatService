@@ -83,7 +83,6 @@ var mobile_stop_moved = {
                 }
 
                 setTimeout(function() {
-                    // console.log(window_size_px.width, window_size_px.height, screen.height);
                     orientation = window.orientation;
                     // console.log(orientation == orientation_old);
                     // console.log(window_size_px.height);
@@ -221,7 +220,7 @@ define('modules/mobile_end_init',[
     $landscape_mask.init();
 });
 /*
-    1.0.15
+    1.0.17
     高京
     2016-08-29
     JS类库
@@ -309,63 +308,224 @@ var functions = {
 
         return str;
     },
+
+    /*
+        高京
+        2018-01-08
+        iphoneX底部需要空出来的高度(px)
+    */
+    iphoneX_bottom_space_px: 20,
+
+    /*
+        高京
+        2018-01-16
+        给iphoneX+微信浏览器：修改底部fixed盒的bottom；增加占位遮罩层；修改文档流内的占位盒高度
+        建议默认将底部fixed盒隐藏，回调中显示
+
+        opt = {
+            bottom_fixed_selector: "", // 底部fixed盒的选择器，此盒将被修改bottom，无默认值
+            document_fixed_space_selector: "", // 文档流内的占位盒选择器，此盒将被增加高度，无默认值
+            fixed_space_div_bgColor: "#fff", // 底部新建占位遮罩盒的背景色，默认"#fff"，建议和页面背景色一致，以免穿帮
+            callback: function(fixed_space_div) { // 回调(新建的底部占位遮罩层||undefined)，无论是否为iphoneX+微信浏览器都会执行
+                fixed_space_div && fixed_space_div.css({
+                    "background": "#000"
+                });
+            } 
+        }
+    */
+    judge_iphoneX_MicroMessenger_changeStyle: function(opt) {
+        var that = this;
+        var opt_default = {
+            bottom_fixed_selector: "",
+            document_fixed_space_selector: "",
+            fixed_space_div_bgColor: "#fff",
+            callback: function() {}
+        };
+        opt = $.extend(opt_default, opt);
+
+        var bottom_fixed_space_div;
+        if (that.judge_iphoneX() && that.judge_MicroMessenger()) {
+
+            // 设置底部fixed盒的bottom
+            $(opt.bottom_fixed_selector).css({
+                "bottom": that.iphoneX_bottom_space_px + "px"
+            });
+
+            // 新建底部占位遮罩盒
+            bottom_fixed_space_div = $(document.createElement("div"))
+                .addClass("bottom_fixed_space_div")
+                .css({
+                    "position": "fixed",
+                    "left": "0",
+                    "bottom": "0",
+                    "width": "100vw",
+                    "height": that.iphoneX_bottom_space_px + "px",
+                    "background": opt.fixed_space_div_bgColor
+                })
+                .appendTo($("body"));
+
+            // 调整文档流内的占位盒高度
+            var document_fixed_space_obj = $(opt.document_fixed_space_selector)
+            document_fixed_space_obj.length > 0 && document_fixed_space_obj.css({
+                "height": (parseFloat(document_fixed_space_obj.css("height").replace("px", "")) + that.iphoneX_bottom_space_px).toString() + "px"
+            });
+        }
+
+        if (opt.callback)
+            opt.callback(bottom_fixed_space_div);
+    },
+
+    /*
+        高京
+        2018-01-08
+        判断ios设备是不是iphoneX (true/false)
+    */
+    judge_iphoneX: function() {
+        var regExp = new RegExp("iphone", "ig"),
+            isIphone = regExp.test(window.navigator.userAgent),
+            isX = isIphone && screen.availHeight == 812;
+
+        return isX;
+    },
+
+    /*
+        高京
+        2018-01-08
+        判断是不是微信浏览器 (true/false)
+    */
+    judge_MicroMessenger: function() {
+        var regExp = new RegExp("MicroMessenger", "ig"),
+            isMicroMessenger = regExp.test(window.navigator.userAgent);
+
+        return isMicroMessenger;
+    },
+
+    /*
+        高京
+        2018-01-08
+        解决移动端h5页面input和textarea获得焦点后被键盘遮挡的bug
+        目前的思路是将焦点滚动到一个安全的可视位置
+        ios 10/11.2 可测。11.1实在找不到
+        android 尽量多机型和系统
+        @opt = {
+            listener_selector: 监听focus的dom选择器，默认"input,textarea"
+        }
+    */
+    fix_h5_input_focus_position: function(opt) {
+
+        var opt_default = {
+            listener_selector: "input,textarea"
+        };
+
+        opt = $.extend(opt_default, opt);
+
+        // 监听对象
+        var listener_obj = $(opt.listener_selector);
+
+        // focus的handler
+        var focus_handler = function() {
+            // var _this = $(this);
+        };
+
+
+        // 监听focus
+        listener_obj.unbind("focus").on("focus", focus_handler);
+    },
+
     /*
         高京
         2017-08-02
-        解决ios端fixed居底input被键盘遮挡的问题
-        @dom_selector: 监听focus和blur的Dom的选择器
-        @autocheck: true|false。自动执行innerHeight的改变监听，解决h5页面input.focus()后不能进入.on("focus")的handler的问题。默认false
+        解决 h5页面 fixed居底input被键盘遮挡的问题
+        
+        2018-01-14：
+        iphoneX(测试版本11.2.2)+微信浏览器：fixed居底的input移动到顶部
+        其他环境不处理
+
+        @opt = {
+            dom_selector, // 监听focus和blur的Dom的选择器
+            autocheck: false, // 自动执行innerHeight的改变监听，解决h5页面input.focus()后不能进入.on("focus")的handler的问题。默认false
+            callback // 执行完focus_handler和blur_handler的回调
+        }
     */
-    fix_ios_fixed_bottom_input: function(dom_selector, autocheck) {
+    fix_fixed_bottom_input: function(opt) {
 
-        autocheck = autocheck || false;
+        var opt_default = {
+            autocheck: false
+        };
+        opt = $.extend(opt_default, opt);
 
-        // IOS版本（安卓则直接退出）
-        var regExp = new RegExp(/.+os (\w+?)_\w+_\w+ like mac os x.+ /ig),
-            iosEdition = regExp.exec(navigator.userAgent);
-
-        if (iosEdition) {
-            iosEdition = parseInt(iosEdition[1]);
-        } else {
+        var dom_obj = $(opt.dom_selector);
+        if (dom_obj.length === 0)
             return;
+
+        // dom_obj的父盒遍历，position=fixed
+        var box_obj = dom_obj.parent();
+        while (box_obj.length > 0 && box_obj.css("position") != "fixed") {
+            // console.log(box_obj);
+            box_obj = box_obj.parent();
         }
 
-        var footer_input = $(dom_selector);
-        var interval,
-            window_innerHeight_px,
-            _window_innerHeight_px;
+        // 判断是否为 iphoneX
+        var isIphoneX = (function() {
+            var regExp = new RegExp("iphone", "ig"),
+                isIphone = regExp.test(window.navigator.userAgent),
+                isX = isIphone && screen.availHeight == 812;
 
-        var exec = function() {
+            return isX;
+        })();
 
-            _window_innerHeight_px = window.innerHeight;
+        // 判断是否为微信浏览器
+        var isMicroMessenger = (function() {
+            var regExp = new RegExp("MicroMessenger", "ig"),
+                isMicroMessenger = regExp.test(window.navigator.userAgent);
 
-            // var dt = new Date();
-            // footer_input.val(dt.getTime() + ":" + window_innerHeight_px + " : " + _window_innerHeight_px);
+            return isMicroMessenger;
+        })();
 
-            // 如果innerHeight变化，或者ios版本小于11（ios10 首先innerHeight不会有变化，其次在执行下面代码时，不会有屏闪，所以持续interval除了性能，没有问题）
-            if (window_innerHeight_px != _window_innerHeight_px || iosEdition < 11) {
-                document.body.scrollTop = document.body.scrollHeight; //获取焦点后将浏览器内所有内容高度赋给浏览器滚动部分高度
-                window_innerHeight_px = _window_innerHeight_px;
-            }
+        // 非（iphoneX+微信浏览器）退出
+        if (!(isIphoneX && isMicroMessenger))
+            return;
+
+        var box_obj_bottom; // 原先的bottom值
+        // foucs处理
+        var focus_handler = function() {
+            box_obj_bottom = box_obj.css("bottom");
+            box_obj.css({
+                bottom: "100px"
+            });
+
+            $(".bottom_fixed_space_div").css("height", "100px");
+
+            if (opt.callback)
+                opt.callback();
         };
 
-        // 初始化window_innerHeight_px，开始interval
-        var focus_handler = function() {
-            window_innerHeight_px = 0;
-            interval = setInterval(function() {
-                exec();
-            }, 1000);
-        }
+        // blur处理
+        var blur_handler = function() {
+            setTimeout(function() {
 
-        footer_input.on("focus", focus_handler);
+                box_obj.css({
+                    "bottom": box_obj_bottom
+                });
 
-        footer_input.on("blur", function() {
-            clearInterval(interval);
-        });
+                $(".bottom_fixed_space_div").css("height", box_obj_bottom);
 
-        if (autocheck)
+                if (opt.callback)
+                    opt.callback();
+            }, 0);
+        };
+
+        // 监听focus
+        dom_obj.unbind("focus").on("focus", focus_handler);
+
+        // 监听blur
+        dom_obj.unbind("blur").on("blur", blur_handler);
+
+        if (opt.autocheck)
             focus_handler();
     },
+
+
     /*
         高京
         2017-06-07
@@ -463,7 +623,7 @@ var functions = {
                     opt.callback();
                 return;
             } else {
-                var stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + $(window).height() >= obj[0].scrollHeight);
+                stop_toDown_bool = top_per_px >= 0 && (obj.scrollTop() + $(window).height() >= obj[0].scrollHeight);
                 if (!stop_toDown_bool)
                     setTimeout(function() {
                         set_scrollTop();
@@ -754,7 +914,6 @@ var functions = {
         return _l;
     }
 };
-
 
 if (typeof define === "function" && define.amd) {
     define('lib/functions',[],function() {
@@ -2741,6 +2900,9 @@ define('app/chat_list',[
 
             var that = this;
 
+            // 判断是否为iphoneX+微信浏览器，调整底部按钮高度
+            that.judge_iphoneX.apply(that);
+
             // 进入页面时，如没有会话记录 则直接弹层选分类；否则 连接socket
             that.judge_LayerShow_auto.apply(that);
 
@@ -2752,6 +2914,28 @@ define('app/chat_list',[
 
             // 静音按钮的监听
             that.mute_button_Listener.apply(that);
+        },
+
+        // 判断是否为iphoneX+微信浏览器，调整底部按钮高度
+        judge_iphoneX: function() {
+            if ($func.judge_iphoneX() && $func.judge_MicroMessenger()) {
+                var footer_button = $(".footer_button");
+
+                footer_button.css({
+                    "bottom": $func.iphoneX_bottom_space_px + "px"
+                });
+
+                $(document.createElement("div"))
+                    .css({
+                        "position": "fixed",
+                        "height": footer_button.css("bottom"),
+                        "width": "100vw",
+                        "left": "0",
+                        "bottom": "0",
+                        "background": "#f5f5f5"
+                    })
+                    .appendTo($("body"));
+            }
         },
 
         // 进入页面时，如没有会话记录 则直接弹层选分类；否则 连接socket
@@ -3846,8 +4030,22 @@ define('app/chat',[
         // 设置底部input盒高度
         set_messageContent_height: function() {
 
-            var footer_button = $(".footer_button"),
+            var that = this,
+                footer_button = $(".footer_button"),
                 submit_height_px = parseFloat(footer_button.find(".weui-btn_primary").css("line-height").replace("px", ""));
+
+            $func.judge_iphoneX_MicroMessenger_changeStyle({
+                bottom_fixed_selector: ".footer_button", // 底部fixed盒的选择器，此盒将被修改bottom，无默认值
+                document_fixed_space_selector: "", // 文档流内的占位盒选择器，此盒将被增加高度，无默认值
+                fixed_space_div_bgColor: $("body").css("background"), // 底部新建占位遮罩盒的背景色，默认"#fff"，建议和页面背景色一致，以免穿帮
+                callback: function(fixed_space_div) { // 回调(新建的底部占位遮罩层||undefined)，无论是否为iphoneX+微信浏览器都会执行
+
+                    // fixed_space_div && fixed_space_div.css({
+                    //     "background": "#000"
+                    // });
+                    that.wrapper_fixed_space_reset_height.apply(that);
+                }
+            });
 
             footer_button.find(".message_content_box,.message_content_div,.message_content_input").css({
                 "height": submit_height_px + "px",
@@ -3858,7 +4056,6 @@ define('app/chat',[
 
         // 监听底部input盒
         messageContentBox_Listener: function() {
-            var that = this;
 
             var message_content_box = $(".message_content_box"),
                 message_div = message_content_box.find(".message_content_div"),
@@ -3897,6 +4094,8 @@ define('app/chat',[
                 });
             } else {
 
+                // that.send_message.apply(that, [1, window.innerHeight + ":" + document.body.scrollHeight + ":" + document.body.scrollTop]);
+
                 // 设置底部input高度
                 that.set_messageContent_height.apply(that);
 
@@ -3910,7 +4109,12 @@ define('app/chat',[
                 that.jduge_show_more_records.apply(that);
 
                 // 解决ios端fixed居底input被键盘遮挡的问题
-                $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
+                $func.fix_fixed_bottom_input({
+                    dom_selector: ".footer_button input[type=text]",
+                    callback: function() {
+                        that.wrapper_fixed_space_reset_height.apply(that);
+                    }
+                });
 
                 // 默认滚动到最底
                 that.rollToBottom.apply(that);
@@ -4181,7 +4385,7 @@ define('app/chat',[
             var that = this;
             var footer_button = $(".footer_button");
 
-            var footer_button_height_px = footer_button.height(),
+            var footer_button_height_px = parseFloat(footer_button.css("height").replace("px", "")) + parseFloat(footer_button.css("bottom").replace("px", "")),
                 fixed_space = $(".fixed_space");
 
             fixed_space.css("height", footer_button_height_px + "px");
@@ -4210,7 +4414,13 @@ define('app/chat',[
                 // footer_input.removeAttr("disabled");
                 footer_input_div.css("display", "none");
                 footer_input.css("display", "block").focus();
-                $func.fix_ios_fixed_bottom_input(".footer_button", true);
+                // $func.fix_fixed_bottom_input({
+                //     dom_selector: ".footer_button input[type=text]",
+                //     autocheck: true,
+                //     callback: function() {
+                //         that.wrapper_fixed_space_reset_height.apply(that);
+                //     }
+                // });
             };
 
             footer_button.find(".emotion").unbind().on("click", function() {

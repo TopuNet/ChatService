@@ -11,7 +11,7 @@ var config = require("./config"),
     chat_restful = require("./chat_restful");
 
 // socket连接地址
-exports.GLOBAL_SOCKET_URL = "http://localhost:4545";
+exports.GLOBAL_SOCKET_URL = "http://192.168.1.228:4545";
 
 // 客户端默认欢迎语
 exports.welcome_message = "您好!欢迎来到XXX！很高兴为您服务!<br />我们的专业顾问服务5*8小时在线，期待与您的沟通。";

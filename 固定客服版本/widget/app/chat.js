@@ -131,8 +131,22 @@ define([
         // 设置底部input盒高度
         set_messageContent_height: function() {
 
-            var footer_button = $(".footer_button"),
+            var that = this,
+                footer_button = $(".footer_button"),
                 submit_height_px = parseFloat(footer_button.find(".weui-btn_primary").css("line-height").replace("px", ""));
+
+            $func.judge_iphoneX_MicroMessenger_changeStyle({
+                bottom_fixed_selector: ".footer_button", // 底部fixed盒的选择器，此盒将被修改bottom，无默认值
+                document_fixed_space_selector: "", // 文档流内的占位盒选择器，此盒将被增加高度，无默认值
+                fixed_space_div_bgColor: $("body").css("background"), // 底部新建占位遮罩盒的背景色，默认"#fff"，建议和页面背景色一致，以免穿帮
+                callback: function(fixed_space_div) { // 回调(新建的底部占位遮罩层||undefined)，无论是否为iphoneX+微信浏览器都会执行
+
+                    // fixed_space_div && fixed_space_div.css({
+                    //     "background": "#000"
+                    // });
+                    that.wrapper_fixed_space_reset_height.apply(that);
+                }
+            });
 
             footer_button.find(".message_content_box,.message_content_div,.message_content_input").css({
                 "height": submit_height_px + "px",
@@ -143,7 +157,6 @@ define([
 
         // 监听底部input盒
         messageContentBox_Listener: function() {
-            var that = this;
 
             var message_content_box = $(".message_content_box"),
                 message_div = message_content_box.find(".message_content_div"),
@@ -182,6 +195,8 @@ define([
                 });
             } else {
 
+                // that.send_message.apply(that, [1, window.innerHeight + ":" + document.body.scrollHeight + ":" + document.body.scrollTop]);
+
                 // 设置底部input高度
                 that.set_messageContent_height.apply(that);
 
@@ -195,7 +210,12 @@ define([
                 that.jduge_show_more_records.apply(that);
 
                 // 解决ios端fixed居底input被键盘遮挡的问题
-                $func.fix_ios_fixed_bottom_input(".footer_button input[type=text]");
+                $func.fix_fixed_bottom_input({
+                    dom_selector: ".footer_button input[type=text]",
+                    callback: function() {
+                        that.wrapper_fixed_space_reset_height.apply(that);
+                    }
+                });
 
                 // 默认滚动到最底
                 that.rollToBottom.apply(that);
@@ -466,7 +486,7 @@ define([
             var that = this;
             var footer_button = $(".footer_button");
 
-            var footer_button_height_px = footer_button.height(),
+            var footer_button_height_px = parseFloat(footer_button.css("height").replace("px", "")) + parseFloat(footer_button.css("bottom").replace("px", "")),
                 fixed_space = $(".fixed_space");
 
             fixed_space.css("height", footer_button_height_px + "px");
@@ -495,7 +515,13 @@ define([
                 // footer_input.removeAttr("disabled");
                 footer_input_div.css("display", "none");
                 footer_input.css("display", "block").focus();
-                $func.fix_ios_fixed_bottom_input(".footer_button", true);
+                // $func.fix_fixed_bottom_input({
+                //     dom_selector: ".footer_button input[type=text]",
+                //     autocheck: true,
+                //     callback: function() {
+                //         that.wrapper_fixed_space_reset_height.apply(that);
+                //     }
+                // });
             };
 
             footer_button.find(".emotion").unbind().on("click", function() {
