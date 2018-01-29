@@ -14,7 +14,7 @@
                         </div>
                 </li>
                 <% } else if(comm_chat_list_template_source=="chat_list"){ %>
-                    <li class="chat_line sid_<%=chat.sid%> li_touchstart<% if(chat.has_noRead_record_client){ %> new<% } %>" sort="<%=chat.sort%>" sid="<%=chat.sid%>" target="_self" url="chat?cid=<%=chat.cid%>&bid=-1&sort=<%=chat.sort_first%>&<%=transParameters(query,'cid|bid|sort')%>">
+                    <li class="chat_line sid_<%=chat.sid%> li_click<% if(chat.has_noRead_record_client){ %> new<% } %>" sort="<%=chat.sort%>" sid="<%=chat.sid%>" target="_self" url="chat?cid=<%=chat.cid%>&bid=-1&sort=<%=chat.sort_first%>&<%=transParameters(query,'cid|bid|sort')%>">
                         <% // class可选：new-有新消息 %>
                             <img src="<%=chat.servicer.headimg%>" />
                             <div class="new_flag"></div>

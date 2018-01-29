@@ -30,6 +30,9 @@ define([
 
             var that = this;
 
+            // 判断是否为iphoneX+微信浏览器，调整底部按钮高度
+            that.judge_iphoneX.apply(that);
+
             // 进入页面时，如没有会话记录 则直接弹层选分类；否则 连接socket
             that.judge_LayerShow_auto.apply(that);
 
@@ -41,6 +44,28 @@ define([
 
             // 静音按钮的监听
             that.mute_button_Listener.apply(that);
+        },
+
+        // 判断是否为iphoneX+微信浏览器，调整底部按钮高度
+        judge_iphoneX: function() {
+            if ($func.judge_iphoneX() && $func.judge_MicroMessenger()) {
+                var footer_button = $(".footer_button");
+
+                footer_button.css({
+                    "bottom": $func.iphoneX_bottom_space_px + "px"
+                });
+
+                $(document.createElement("div"))
+                    .css({
+                        "position": "fixed",
+                        "height": footer_button.css("bottom"),
+                        "width": "100vw",
+                        "left": "0",
+                        "bottom": "0",
+                        "background": "#f5f5f5"
+                    })
+                    .appendTo($("body"));
+            }
         },
 
         // 进入页面时，如没有会话记录 则直接弹层选分类；否则 连接socket

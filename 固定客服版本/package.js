@@ -131,7 +131,7 @@ var run = function(fis_releaseDir) {
         argv.push(launch_fp);
     } else {
         cmd = "supervisor";
-        argv.push("-w", `${fis_releaseDir}/app.js,${fis_releaseDir}/routes,${fis_releaseDir}/handle`, "--debug", launch_fp);
+        argv.push("-w", `${fis_releaseDir}/app.js,${fis_releaseDir}/launch,${fis_releaseDir}/routes,${fis_releaseDir}/handle`, "--debug", launch_fp);
     }
 
     var spawn = shell.spawn(cmd, argv);
