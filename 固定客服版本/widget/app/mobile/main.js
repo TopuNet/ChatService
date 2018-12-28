@@ -10,4 +10,4 @@ requirejs.config({
     // }
 });
 
-require(["app_mobile", "http://res.wx.qq.com/open/js/jweixin-1.0.0.js"]);
+require(["app/mobile/app", "http://res.wx.qq.com/open/js/jweixin-1.0.0.js"]);

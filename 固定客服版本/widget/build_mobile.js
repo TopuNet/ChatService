@@ -1,8 +1,8 @@
 ({
     // appDir: "/widget",
     baseUrl: "./",
-    name: "main_mobile",
-    out: "aio_mobile.js",
+    name: "app/mobile/main",
+    out: "aio_app_mobile.js",
     // optimize: "uglify",
     optimize: "none",
     findNestedDependencies: true,

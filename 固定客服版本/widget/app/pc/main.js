@@ -11,4 +11,4 @@ requirejs.config({
     //     }
 });
 
-require(["app"]);
+require(["app/pc/app"]);

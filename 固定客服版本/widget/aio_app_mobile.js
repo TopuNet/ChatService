@@ -220,7 +220,7 @@ define('modules/mobile_end_init',[
     $landscape_mask.init();
 });
 /*
-    1.0.17
+    1.1.1
     高京
     2016-08-29
     JS类库
@@ -307,6 +307,24 @@ var functions = {
         // str += second;
 
         return str;
+    },
+
+    /*
+        高京
+        2018-01-16
+        判断mobile系统，返回 ios | android | others
+    */
+    judge_mobile_os: function() {
+        var u = navigator.userAgent;
+        var isAndroid = u.indexOf('Android') > -1 || u.indexOf('Adr') > -1; //android终端
+        var isiOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); //ios终端
+
+        if (isiOS)
+            return "ios";
+        else if (isAndroid)
+            return "android";
+        else
+            return "others";
     },
 
     /*
@@ -401,30 +419,78 @@ var functions = {
     },
 
     /*
-        高京
+        胡天培
         2018-01-08
-        解决移动端h5页面input和textarea获得焦点后被键盘遮挡的bug
+        解决移动端h5页面文档流中input和textarea获得焦点后被键盘遮挡的bug
         目前的思路是将焦点滚动到一个安全的可视位置
         ios 10/11.2 可测。11.1实在找不到
         android 尽量多机型和系统
+
+        2018-01-08 胡天培
+        ios问题不大，只处理安卓
+
         @opt = {
-            listener_selector: 监听focus的dom选择器，默认"input,textarea"
+            Listener_selector: "",   //监听focus的dom选择器，默认"input,textarea"
+            OutBox_selector:"",      //包裹被监听元素的最外层选择器，高度为屏幕高度的元素 无默认
+            scroll_selector:"",      //向上滚动的核选择器 默认为：body
         }
     */
     fix_h5_input_focus_position: function(opt) {
 
+        var that = this;
+
         var opt_default = {
-            listener_selector: "input,textarea"
+            Listener_selector: "input,textarea"
         };
 
         opt = $.extend(opt_default, opt);
 
         // 监听对象
-        var listener_obj = $(opt.listener_selector);
+        var listener_obj = $(opt.Listener_selector);
 
         // focus的handler
         var focus_handler = function() {
-            // var _this = $(this);
+
+            //判断设备
+            var os = that.judge_mobile_os();
+            if (os == "android") {
+
+                //获得页面可视区域的高度
+                var _height = $(window).height();
+
+                //将外盒的高度设为此高度
+                $(opt.OutBox_selector).css("height", _height + "px");
+
+                //包裹监听元素的外盒对象
+                var OutBox_selector_obj = $(opt.OutBox_selector);
+                OutBox_selector_obj.css({
+                    "transition": "all .2s"
+                });
+
+                //获取当前获取焦点的input
+                var clickObj = $(opt.Listener_selector);
+
+                //获取已滚动的距离
+                var scrollTop;
+                
+                //获得距离顶部的高度
+                var Top;
+                
+                //获取焦点时
+                clickObj.on("focus", function() {
+                
+                    //获取向上滚动的距离
+                    scrollTop = $(".wrapper").scrollTop();
+                
+                    //获取元素距离顶部的距离
+                    Top = $(this).offset().top;
+                
+                    setTimeout(function() {
+                        //向上滚动一定距离
+                        $(opt.scroll_selector).scrollTop(scrollTop + Top - 100);
+                    }, 1000);
+                });
+            }
         };
 
 
@@ -4600,7 +4666,7 @@ define('app/chat_tobeConnect',["lib/socket.io.min"], function($io) {
     return chat_tobeConnect;
 });
 
-define('app_mobile',["lib/zepto.min", "modules/mobile_end_init"], function() {
+define('app/mobile/app',["../../lib/zepto.min", "../../modules/mobile_end_init"], function() {
 
     var page_name = document.getElementById("script_page").getAttribute("page");
     switch (page_name) {
@@ -4636,6 +4702,6 @@ requirejs.config({
     // }
 });
 
-require(["app_mobile", "http://res.wx.qq.com/open/js/jweixin-1.0.0.js"]);
-define("main_mobile", function(){});
+require(["app/mobile/app", "http://res.wx.qq.com/open/js/jweixin-1.0.0.js"]);
+define("app/mobile/main", function(){});
 

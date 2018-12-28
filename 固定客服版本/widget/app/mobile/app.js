@@ -1,4 +1,4 @@
-define(["lib/zepto.min", "modules/mobile_end_init"], function() {
+define(["../../lib/zepto.min", "../../modules/mobile_end_init"], function() {
 
     var page_name = document.getElementById("script_page").getAttribute("page");
     switch (page_name) {

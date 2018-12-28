@@ -1,8 +1,8 @@
 ({
     // appDir: "/widget",
     baseUrl: "./",
-    name: "main",
-    out: "aio.js",
+    name: "app/pc/main",
+    out: "aio_app_pc.js",
     // optimize: "uglify",
     optimize: "none",
     findNestedDependencies: true,
