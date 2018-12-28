@@ -9,6 +9,7 @@ fis.set('project.ignore', ['/fis-conf.js',
     '/**/.DS_Store',
     '/**/server.log',
     '/**/npm-debug.log',
+    'package*',
 
     '**/test_*.*',
     '**/pub_*.*',
